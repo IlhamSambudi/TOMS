@@ -1,175 +1,57 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* ── Strict Design System Tokens ── */
+/* ── Strict Design System Tokens & Utilities ── */
 :root {
-    --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-
-    /* ── Colors ── */
-    --bg-primary: #F8FAF9;
-    /* Page background */
-    --bg-surface: #FFFFFF;
-    /* Content background */
-    --bg-hover: #F1F5F9;
-
-    /* Primary Accent (Teal) */
-    --primary: #0F766E;
-    --primary-hover: #115E59;
-    --primary-soft: #D1FAE5;
-
-    /* Text */
-    --text-primary: #0F172A;
-    --text-secondary: #64748B;
-    --text-muted: #94A3B8;
-
-    /* Border */
-    --border: #E2E8F0;
-
-    /* Status Badges */
-    --status-success: #16A34A;
-    --status-warning: #F59E0B;
-    --status-danger: #DC2626;
-    --status-info: #2563EB;
-
-    /* ── Spacing Scale (Base 8px) ── */
-    --space-micro: 4px;
-    --space-sm: 8px;
-    --space-md: 16px;
-    --space-lg: 24px;
-    --space-xl: 32px;
-    --space-2xl: 48px;
-
-    /* ── Radius System ── */
-    --radius-sm: 10px;
-    /* Small buttons/elements */
-    --radius-md: 12px;
-    /* Standard Inputs/Buttons */
-    --radius-lg: 14px;
-    /* Cards/Tables */
-    --radius-xl: 18px;
-    /* Modals */
-    --radius-full: 9999px;
-
-    /* ── Shadows ── */
-    --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.03);
-    --shadow-soft: 0 4px 16px rgba(15, 23, 42, 0.04);
-
-    /* ── Layout Dimensions ── */
     --sidebar-width: 248px;
     --sidebar-collapsed: 72px;
     --navbar-height: 64px;
-    --content-max-width: 1440px;
+    --content-max-width: 1400px;
 }
 
-/* ── Base Reset ── */
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+/* 
+   Fail-safe Utilities 
+   (Since JIT arbitrary values seem unstable in this env)
+*/
+@media (min-width: 1280px) {
+    .xl\:w-sidebar {
+        width: var(--sidebar-width);
+    }
+
+    .xl\:ml-sidebar {
+        margin-left: var(--sidebar-width);
+    }
+
+    .xl\:block {
+        display: block;
+    }
 }
 
-html {
-    font-size: 16px;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+@media (min-width: 768px) {
+    .md\:w-sidebar-collapsed {
+        width: var(--sidebar-collapsed);
+    }
+
+    .md\:ml-sidebar-collapsed {
+        margin-left: var(--sidebar-collapsed);
+    }
+
+    .md\:translate-x-0 {
+        transform: translateX(0);
+    }
 }
 
-body {
-    font-family: var(--font-family);
-    font-weight: 400;
-    color: var(--text-primary);
-    background: var(--bg-primary);
-    line-height: 1.5;
+.w-sidebar {
+    width: var(--sidebar-width);
 }
 
-/* ── Typography ── */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-    font-weight: 600;
-    color: var(--text-primary);
-    letter-spacing: -0.01em;
+.ml-sidebar {
+    margin-left: var(--sidebar-width);
 }
 
-.page-title {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 24px;
+.max-w-content {
+    max-width: var(--content-max-width);
 }
 
-.section-title {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 16px;
-}
-
-.card-title {
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-secondary);
-    margin-bottom: 8px;
-}
-
-/* ── Custom Scrollbar ── */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #CBD5E1;
-    border-radius: var(--radius-full);
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #94A3B8;
-}
-
-/* ── Utility Classes ── */
-.text-micro {
-    font-size: 11px;
-}
-
-.text-small {
-    font-size: 12px;
-}
-
-.text-body {
-    font-size: 14px;
-}
-
-.transition-all {
-    transition: all 150ms ease;
-}
-
-/* ── Compatibility (Aliases) ── */
-.bg-slate-50 {
-    background-color: var(--bg-primary) !important;
-}
-
-.bg-white {
-    background-color: var(--bg-surface) !important;
-}
-
-.text-slate-900 {
-    color: var(--text-primary) !important;
-}
-
-.text-slate-600 {
-    color: var(--text-secondary) !important;
-}
-
-.border-slate-200 {
-    border-color: var(--border) !important;
+.h-navbar {
+    height: var(--navbar-height);
 }

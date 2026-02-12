@@ -62,28 +62,8 @@ const navSections = [
 
 const Layout = () => {
     const location = useLocation();
-    const [sidebarMode, setSidebarMode] = useState('desktop');
+    // Only strictly needed state is for Mobile Menu toggle
     const [mobileOpen, setMobileOpen] = useState(false);
-
-    // Responsive Logic
-    React.useEffect(() => {
-        const handleResize = () => {
-            const width = window.innerWidth;
-            if (width >= 1280) {
-                setSidebarMode('desktop');
-                setMobileOpen(false);
-            } else if (width >= 768) {
-                setSidebarMode('tablet');
-                setMobileOpen(false);
-            } else {
-                setSidebarMode('mobile');
-            }
-        };
-
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     const isActive = (path) => {
         if (path === '/') return location.pathname === '/';
@@ -91,76 +71,86 @@ const Layout = () => {
     };
 
     return (
-        // APP SHELL: Strict 3-Level Hierarchy
-        // 1. Sidebar (Fixed 248px)
-        // 2. Main Wrapper (ml-[248px])
-        <div className="min-h-screen bg-[#F8FAF9] font-['Inter']">
+        // ── APP ROOT ──
+        <div className="min-h-screen bg-[#F8FAF9] font-sans">
 
-            {/* ── Mobile Overlay ── */}
-            {sidebarMode === 'mobile' && mobileOpen && (
+            {/* ── MOBILE OVERLAY (Visible only on < md when open) ── */}
+            {mobileOpen && (
                 <div
-                    className="fixed inset-0 bg-slate-900/60 z-50 backdrop-blur-sm transition-opacity"
+                    className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm transition-opacity md:hidden"
                     onClick={() => setMobileOpen(false)}
                 />
             )}
 
-            {/* ── Level 1: Sidebar (Fixed) ── */}
+            {/* ── SIDEBAR (Fixed) ── */}
+            {/* 
+                DESKTOP (>= 1280px): 248px
+                TABLET (>= 768px): 72px
+                MOBILE (< 768px): Hidden by default, standard drawer when open 
+            */}
             <aside
                 className={clsx(
-                    'fixed inset-y-0 left-0 z-40 bg-white border-r border-[#E2E8F0] flex flex-col transition-all duration-300',
-                    // Width Rules
-                    sidebarMode === 'desktop' ? 'w-[248px]' :
-                        sidebarMode === 'tablet' ? 'w-[72px]' :
-                            sidebarMode === 'mobile' ? (mobileOpen ? 'w-[248px] translate-x-0' : 'w-[248px] -translate-x-full') : 'w-[248px]'
+                    "fixed inset-y-0 left-0 z-50 bg-white border-r border-slate-200 flex flex-col transition-all duration-300 ease-in-out",
+                    // Width Logic
+                    "w-sidebar xl:w-sidebar md:w-sidebar-collapsed",
+                    // Mobile Visibility Logic (Translate off-screen by default on mobile)
+                    mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
                 )}
             >
-                {/* Sidebar Header (64px) */}
-                <div className="h-[64px] flex items-center px-[20px] flex-shrink-0 border-b border-transparent">
+                {/* 1. Sidebar Header */}
+                <div className="h-navbar flex items-center px-[20px] md:px-[20px] xl:px-[20px] md:justify-center xl:justify-start border-b border-transparent">
                     <div className="flex items-center gap-3">
-                        <div className="w-[32px] h-[32px] bg-[var(--primary)] rounded-[8px] flex items-center justify-center text-white shadow-md shadow-teal-700/20">
+                        <div className="size-[32px] bg-[#0F766E] rounded-[8px] flex items-center justify-center text-white shadow-sm shrink-0">
                             <Building2 size={18} strokeWidth={2.5} />
                         </div>
-                        <span className={clsx("text-[18px] font-bold text-slate-900 tracking-tight transition-opacity duration-300", sidebarMode === 'tablet' && 'opacity-0 w-0 overflow-hidden')}>
+                        {/* Hide text on tablet, show on desktop/mobile */}
+                        <span className="text-[18px] font-bold text-slate-900 tracking-tight md:hidden xl:block whitespace-nowrap overflow-hidden">
                             TOMS
                         </span>
                     </div>
                 </div>
 
-                {/* Navigation */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar px-[12px] py-6">
+                {/* 2. Navigation */}
+                <div className="flex-1 overflow-y-auto overflow-x-hidden py-6 px-3">
                     <nav className="flex flex-col gap-6">
                         {navSections.map((section, idx) => (
                             <div key={idx} className="flex flex-col gap-1">
-                                <div className={clsx(
-                                    "px-4 mb-2 text-[11px] font-bold text-[#94A3B8] uppercase tracking-[0.08em] transition-opacity duration-300",
-                                    sidebarMode === 'tablet' && "opacity-0 h-0 overflow-hidden"
-                                )}>
+                                {/* Section Title */}
+                                <div className="px-4 mb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider md:hidden xl:block whitespace-nowrap overflow-hidden">
                                     {section.title}
                                 </div>
+                                <div className="hidden md:block xl:hidden text-center mb-2">
+                                    <div className="h-[1px] w-8 bg-slate-200 mx-auto" />
+                                </div>
 
+                                {/* Items */}
                                 {section.items.map(item => {
                                     const active = isActive(item.path);
                                     return (
                                         <Link
                                             key={item.path}
                                             to={item.path}
-                                            onClick={() => sidebarMode === 'mobile' && setMobileOpen(false)}
+                                            onClick={() => setMobileOpen(false)}
                                             className={clsx(
-                                                'group flex items-center h-[40px] px-[12px] gap-[12px] rounded-[10px] transition-all duration-150',
+                                                "group flex items-center h-[40px] px-3 gap-3 rounded-[10px] transition-all duration-200",
+                                                // Active State
                                                 active
-                                                    ? 'bg-[#E0F2F1] text-[#0F766E] font-semibold'
-                                                    : 'text-[#64748B] font-medium hover:bg-[#F1F5F9] hover:text-[#0F172A]'
+                                                    ? "bg-teal-50 text-teal-700 font-semibold"
+                                                    : "text-slate-500 font-medium hover:bg-slate-50 hover:text-slate-900",
+                                                // Icon Centering for Tablet
+                                                "md:justify-center xl:justify-start"
                                             )}
                                         >
                                             <item.icon
                                                 size={20}
                                                 strokeWidth={2}
-                                                className={clsx(active ? "text-[#0F766E]" : "text-[#64748B] group-hover:text-[#0F172A]")}
+                                                className={clsx(
+                                                    "shrink-0 transition-colors",
+                                                    active ? "text-[#0F766E]" : "text-slate-400 group-hover:text-slate-700"
+                                                )}
                                             />
-                                            <span className={clsx(
-                                                "whitespace-nowrap text-[14px] transition-all duration-300",
-                                                sidebarMode === 'tablet' ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
-                                            )}>
+                                            {/* Label hiding for Tablet */}
+                                            <span className="text-[14px] whitespace-nowrap md:hidden xl:block overflow-hidden">
                                                 {item.label}
                                             </span>
                                         </Link>
@@ -171,76 +161,88 @@ const Layout = () => {
                     </nav>
                 </div>
 
-                {/* Sidebar Footer */}
-                <div className="p-[16px] border-t border-[#E2E8F0]">
-                    <div className="flex items-center gap-3 p-2 rounded-[10px] hover:bg-[#F1F5F9] transition-colors cursor-pointer">
-                        <div className="w-[36px] h-[36px] rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 overflow-hidden shrink-0">
+                {/* 3. User Profile Footer */}
+                <div className="p-4 border-t border-slate-200">
+                    <div className="flex items-center gap-3 p-2 rounded-[10px] hover:bg-slate-50 cursor-pointer transition-colors md:justify-center xl:justify-start">
+                        <div className="size-[36px] rounded-full bg-slate-100 shrink-0 border border-slate-200 overflow-hidden">
                             <img
-                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin&backgroundColor=e2e8f0"
+                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin"
                                 alt="Admin"
                                 className="w-full h-full object-cover"
                             />
                         </div>
-                        <div className={clsx("flex flex-col transition-all duration-300 overflow-hidden", sidebarMode === 'tablet' && "w-0 opacity-0")}>
-                            <span className="text-[13px] font-semibold text-[#0F172A] truncate">Admin User</span>
-                            <span className="text-[11px] text-[#64748B] truncate">Operations Lead</span>
+                        <div className="flex flex-col md:hidden xl:flex overflow-hidden">
+                            <span className="text-[13px] font-semibold text-slate-900 truncate">Admin User</span>
+                            <span className="text-[11px] text-slate-500 truncate">Operations Lead</span>
                         </div>
                     </div>
                 </div>
             </aside>
 
-            {/* ── Level 2: Main Wrapper ── */}
-            <main
-                className="flex flex-col min-h-screen bg-[#F8FAF9] transition-all duration-300"
-                style={{
-                    marginLeft: sidebarMode === 'desktop' ? '248px' :
-                        sidebarMode === 'tablet' ? '72px' : '0px'
-                }}
-            >
-                {/* Mobile Header Trigger */}
-                {sidebarMode === 'mobile' && (
-                    <div className="h-[64px] px-4 flex items-center border-b border-[#E2E8F0] bg-white sticky top-0 z-30">
-                        <button onClick={() => setMobileOpen(true)} className="p-2 -ml-2 text-slate-600">
-                            <Menu size={20} />
-                        </button>
-                        <span className="ml-3 font-bold text-lg text-slate-800">TOMS</span>
-                    </div>
-                )}
 
-                {/* Navbar (Sticky Top) */}
-                <header className={clsx("h-[64px] bg-white border-b border-[#E2E8F0] sticky top-0 z-20 px-[32px] flex items-center justify-between", sidebarMode === 'mobile' && 'hidden')}>
-                    {/* Page Title / Breadcrumb Area */}
-                    <div className="flex items-center gap-4">
-                        {/* Title is typically handled in PageHeader now, but keeping generic title here if needed or blank */}
-                        <div className="text-[14px] font-medium text-[#64748B]">
-                            {/* Optional: Add Breadcrumbs here later */}
-                            Start / {location.pathname === '/' ? 'Dashboard' : location.pathname.slice(1).charAt(0).toUpperCase() + location.pathname.slice(2)}
-                        </div>
-                    </div>
+            {/* ── MAIN WRAPPER ── */}
+            {/* 
+                Desktop Margin: 248px
+                Tablet Margin: 72px
+                Mobile Margin: 0
+            */}
+            <main className={clsx(
+                "flex flex-col min-h-screen transition-[margin] duration-300 ease-in-out",
+                // Responsive Margins using Theme Variables
+                "ml-0 md:ml-sidebar-collapsed xl:ml-sidebar"
+            )}>
 
-                    {/* Global Actions */}
-                    <div className="flex items-center gap-4">
-                        <div className="relative group">
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className="w-[280px] h-[36px] pl-[36px] pr-4 bg-[#F1F5F9] border-none rounded-[8px] text-[13px] text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 transition-all"
-                            />
-                            <Search size={16} className="absolute left-[12px] top-1/2 -translate-y-1/2 text-[#94A3B8] group-focus-within:text-[#0F766E] transition-colors" />
+                {/* ── NAVBAR (Sticky) ── */}
+                <header className="h-navbar bg-white border-b border-slate-200 sticky top-0 z-30">
+                    <div className="h-full flex items-center justify-between w-full max-w-content mx-auto px-[24px] xl:px-[32px]">
+
+                        {/* Left: Mobile Toggle & Breadcrumb Placeholder */}
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => setMobileOpen(true)}
+                                className="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-700"
+                            >
+                                <Menu size={20} />
+                            </button>
+
+                            {/* Breadcrumb / Title */}
+                            <div className="hidden md:flex items-center text-[14px] font-medium text-slate-500">
+                                Start <span className="mx-2 text-slate-300">/</span>
+                                <span className="text-slate-900">
+                                    {location.pathname === '/' ? 'Dashboard' :
+                                        location.pathname.slice(1).charAt(0).toUpperCase() + location.pathname.slice(2)}
+                                </span>
+                            </div>
                         </div>
-                        <div className="h-5 w-[1px] bg-[#E2E8F0] mx-1"></div>
-                        <button className="relative w-[36px] h-[36px] flex items-center justify-center text-[#64748B] hover:text-[#0F766E] hover:bg-[#F1F5F9] rounded-[8px] transition-all">
-                            <Bell size={18} />
-                            <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-[#DC2626] rounded-full border border-white"></span>
-                        </button>
+
+                        {/* Right: Actions */}
+                        <div className="flex items-center gap-4">
+                            <div className="relative hidden sm:block group">
+                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors" />
+                                <input
+                                    type="text"
+                                    placeholder="Search..."
+                                    className="h-[36px] w-[240px] pl-[36px] pr-4 bg-slate-50 border-none rounded-[8px] text-[13px] text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-all"
+                                />
+                            </div>
+                            <div className="h-6 w-[1px] bg-slate-200 mx-2 hidden sm:block" />
+                            <button className="relative p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-[8px] transition-all">
+                                <Bell size={18} />
+                                <span className="absolute top-2 right-2 size-1.5 bg-red-500 rounded-full ring-2 ring-white" />
+                            </button>
+                        </div>
                     </div>
                 </header>
 
-                {/* ── Level 3: Content Area ── */}
-                {/* Padding Top 24px, Bottom 48px */}
-                <div className="flex-1 pt-[24px] pb-[48px]">
-                    <Outlet />
+                {/* ── CONTENT AREA ── */}
+                {/* Global Padding Container */}
+                <div className="flex-1 px-[24px] xl:px-[32px] pt-[24px] pb-[48px]">
+                    {/* Inner Max-Width Constraint */}
+                    <div className="w-full max-w-content mx-auto">
+                        <Outlet />
+                    </div>
                 </div>
+
             </main>
         </div>
     );

@@ -5,7 +5,6 @@ import { CalendarDays, MapPin, Clock, Users, Activity, ArrowRight, MoreHorizonta
 import Card from '../components/ui/Card';
 import Skeleton from '../components/ui/Skeleton';
 import Button from '../components/ui/Button';
-import PageContainer from '../components/layout/PageContainer';
 import groupService from '../services/groupService';
 
 const Dashboard = () => {
@@ -52,9 +51,9 @@ const Dashboard = () => {
     ];
 
     return (
-        <PageContainer>
+        <>
             {/* ── Page Header ── */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-[24px]">
                 <div>
                     <h1 className="text-[24px] font-bold text-slate-900 tracking-tight">Dashboard Overview</h1>
                     <p className="text-[14px] text-slate-500 mt-1">Welcome back, here's what happening today.</p>
@@ -189,7 +188,7 @@ const Dashboard = () => {
                 </div>
 
             </div>
-        </PageContainer>
+        </>
     );
 };
 
