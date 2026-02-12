@@ -2,10 +2,42 @@
 
 /* ── Strict Design System Tokens & Utilities ── */
 :root {
+    /* ── Colors ── */
+    --bg-primary: #F8FAF9;
+    --bg-surface: #FFFFFF;
+    --bg-hover: #F1F5F9;
+
+    /* Primary Accent (Teal) */
+    --primary: #0F766E;
+    --primary-hover: #115E59;
+    --primary-soft: #D1FAE5;
+
+    /* Text */
+    --text-primary: #0F172A;
+    --text-secondary: #64748B;
+    --text-muted: #94A3B8;
+
+    /* Border */
+    --border: #E2E8F0;
+
+    /* Status Badges */
+    --status-success: #16A34A;
+    --status-warning: #F59E0B;
+    --status-danger: #DC2626;
+    --status-info: #2563EB;
+
+    /* ── Layout Dimensions ── */
     --sidebar-width: 248px;
     --sidebar-collapsed: 72px;
     --navbar-height: 64px;
     --content-max-width: 1400px;
+
+    /* ── Radius System ── */
+    --radius-sm: 10px;
+    --radius-md: 12px;
+    --radius-lg: 14px;
+    --radius-xl: 18px;
+    --radius-full: 9999px;
 }
 
 /* 
@@ -14,15 +46,15 @@
 */
 @media (min-width: 1280px) {
     .xl\:w-sidebar {
-        width: var(--sidebar-width);
+        width: var(--sidebar-width) !important;
     }
 
     .xl\:ml-sidebar {
-        margin-left: var(--sidebar-width);
+        margin-left: var(--sidebar-width) !important;
     }
 
     .xl\:block {
-        display: block;
+        display: block !important;
     }
 }
 
