@@ -312,29 +312,61 @@ const GroupDetail = () => {
             <Modal isOpen={transportModal} onClose={() => setTransportModal(false)} title={editTransport ? 'Edit Transport' : 'Add Transport'}>
                 <form onSubmit={transportForm.handleSubmit(submitTransport)} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                        <Input label="Provider" {...transportForm.register('provider_name', { required: true })} placeholder="Vendor name" />
+                        <div className="space-y-1.5">
+                            <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Provider Name</label>
+                            <select {...transportForm.register('provider_name', { required: true })} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm bg-white"
+                                style={{ border: '1px solid var(--border)', outline: 'none' }}>
+                                <option value="">Select provider</option>
+                                <option value="Muasasah">Muasasah</option>
+                                <option value="Handling">Handling</option>
+                            </select>
+                        </div>
                         <div className="space-y-1.5">
                             <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Vehicle Type</label>
                             <select {...transportForm.register('vehicle_type', { required: true })} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm bg-white"
                                 style={{ border: '1px solid var(--border)', outline: 'none' }}>
-                                <option value="">Select</option>
+                                <option value="">Select vehicle</option>
                                 <option value="Bus">Bus</option>
                                 <option value="Coaster">Coaster</option>
-                                <option value="Van">Van</option>
-                                <option value="Sedan">Sedan</option>
+                                <option value="GMC">GMC</option>
                             </select>
                         </div>
                     </div>
-                    <Input label="Route" {...transportForm.register('route', { required: true })} placeholder="e.g. Jeddah Airport → Hotel" />
+                    <Input label="Route" {...transportForm.register('route', { required: true })} placeholder="e.g. City Tour Makkah, Pickup Airport" />
                     <div className="grid grid-cols-2 gap-4">
-                        <Input label="Pickup Location" {...transportForm.register('pickup_location')} placeholder="Optional" />
-                        <Input label="Drop Location" {...transportForm.register('drop_location')} placeholder="Optional" />
+                        <div className="space-y-1.5">
+                            <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Pickup Location</label>
+                            <select {...transportForm.register('pickup_location')} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm bg-white"
+                                style={{ border: '1px solid var(--border)', outline: 'none' }}>
+                                <option value="">Select location</option>
+                                <option value="King Abdul Aziz Airport">King Abdul Aziz Airport</option>
+                                <option value="Muhammad Prince Abdul Aziz Airport">Muhammad Prince Abdul Aziz Airport</option>
+                                <option value="Hotel Makkah">Hotel Makkah</option>
+                                <option value="Hotel Madinah">Hotel Madinah</option>
+                                <option value="Train Station">Train Station</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Drop Location</label>
+                            <select {...transportForm.register('drop_location')} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm bg-white"
+                                style={{ border: '1px solid var(--border)', outline: 'none' }}>
+                                <option value="">Select location</option>
+                                <option value="King Abdul Aziz Airport">King Abdul Aziz Airport</option>
+                                <option value="Muhammad Prince Abdul Aziz Airport">Muhammad Prince Abdul Aziz Airport</option>
+                                <option value="Hotel Makkah">Hotel Makkah</option>
+                                <option value="Hotel Madinah">Hotel Madinah</option>
+                                <option value="Train Station">Train Station</option>
+                                <option value="City Tour Makkah">City Tour Makkah</option>
+                                <option value="Madinah">City Tour Madinah</option>
+                                <option value="Thaif">City Tour Thaif</option>
+                            </select>
+                        </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <Input label="Journey Date" type="date" {...transportForm.register('journey_date', { required: true })} />
                         <Input label="Pax Count" type="number" {...transportForm.register('pax_count')} />
                     </div>
-                    <Input label="Notes" {...transportForm.register('notes')} placeholder="Optional" />
+                    <Input label="Notes (Time)" {...transportForm.register('notes')} placeholder="e.g. 09:00 AM" />
                     <div className="flex gap-2 justify-end pt-1">
                         <Button variant="secondary" type="button" onClick={() => setTransportModal(false)}>Cancel</Button>
                         <Button type="submit" loading={transportForm.formState.isSubmitting}>{editTransport ? 'Update' : 'Add'}</Button>

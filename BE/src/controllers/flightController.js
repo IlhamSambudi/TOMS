@@ -6,6 +6,7 @@ const FlightController = {
             const flights = await FlightModel.findAll();
             res.json({ success: true, message: 'Flights retrieved', data: flights });
         } catch (error) {
+            console.error('Flight getAll error:', error);
             res.status(500).json({ success: false, message: error.message, data: null });
         }
     },
@@ -18,6 +19,7 @@ const FlightController = {
             }
             res.json({ success: true, message: 'Flight retrieved', data: flight });
         } catch (error) {
+            console.error('Flight getById error:', error);
             res.status(500).json({ success: false, message: error.message, data: null });
         }
     },
@@ -27,6 +29,7 @@ const FlightController = {
             const flight = await FlightModel.create(req.body);
             res.status(201).json({ success: true, message: 'Flight created', data: flight });
         } catch (error) {
+            console.error('Flight create error:', error);
             res.status(500).json({ success: false, message: error.message, data: null });
         }
     },
@@ -39,6 +42,7 @@ const FlightController = {
             }
             res.json({ success: true, message: 'Flight updated', data: flight });
         } catch (error) {
+            console.error('Flight update error:', error);
             res.status(500).json({ success: false, message: error.message, data: null });
         }
     },
@@ -48,6 +52,7 @@ const FlightController = {
             await FlightModel.delete(req.params.id);
             res.json({ success: true, message: 'Flight deleted', data: null });
         } catch (error) {
+            console.error('Flight delete error:', error);
             res.status(500).json({ success: false, message: error.message, data: null });
         }
     }

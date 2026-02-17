@@ -6,9 +6,10 @@ const GroupFlightSegmentModel = {
         const result = await pool.query(
             `SELECT gfs.*, 
                     fm.airline, fm.flight_number, fm.origin, fm.destination, 
-                    fm.scheduled_etd, fm.scheduled_eta
+                    TO_CHAR(fm.departure_time, 'HH24:MI') as scheduled_etd, 
+                    TO_CHAR(fm.arrival_time, 'HH24:MI') as scheduled_eta
              FROM group_flight_segments gfs
-             JOIN flight_master fm ON gfs.flight_master_id = fm.id
+             JOIN flights fm ON gfs.flight_master_id = fm.id
              WHERE gfs.group_id = $1
              ORDER BY gfs.segment_order ASC`,
             [groupId]
@@ -21,7 +22,7 @@ const GroupFlightSegmentModel = {
         const { flight_master_id, flight_date, segment_order, override_etd, override_eta, remarks } = data;
 
         // Validate flight_master_id exists
-        const flightCheck = await pool.query('SELECT id FROM flight_master WHERE id = $1', [flight_master_id]);
+        const flightCheck = await pool.query('SELECT id FROM flights WHERE id = $1', [flight_master_id]);
         if (flightCheck.rows.length === 0) {
             throw new Error('Flight master not found');
         }

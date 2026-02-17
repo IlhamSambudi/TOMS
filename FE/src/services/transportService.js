@@ -1,6 +1,10 @@
 import api from './api';
 
 const transportService = {
+    getAll: async () => {
+        const res = await api.get('/transports');
+        return res.data;
+    },
     getByGroup: async (groupId) => {
         const res = await api.get(`/groups/${groupId}/transport`);
         return res.data;

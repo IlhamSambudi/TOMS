@@ -1,16 +1,33 @@
 // Dashboard.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, MapPin, Clock, Users, Activity, ArrowRight, MoreHorizontal, Plus } from 'lucide-react';
+import { CalendarDays, MapPin, Clock, Users, Activity, ArrowRight, MoreHorizontal, Plus, Bus, UserCheck, Briefcase, Building2 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Skeleton from '../components/ui/Skeleton';
 import Button from '../components/ui/Button';
 import groupService from '../services/groupService';
+import TransportModal from '../components/resources/TransportModal';
+import AssignmentModal from '../components/resources/AssignmentModal';
+import StaffModal from '../components/resources/StaffModal';
+import HandlingCompanyModal from '../components/resources/HandlingCompanyModal';
 
 const Dashboard = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [summary, setSummary] = useState(null);
+
+    // Modal States
+    const [modalOpen, setModalOpen] = useState({
+        transport: false,
+        assignment: false,
+        muthawif: false,
+        tourLeader: false,
+        handling: false
+    });
+
+    const toggleModal = (key, value) => {
+        setModalOpen(prev => ({ ...prev, [key]: value }));
+    };
 
     useEffect(() => {
         const fetchSummary = async () => {
@@ -58,11 +75,21 @@ const Dashboard = () => {
                     <h1 className="text-[24px] font-bold text-slate-900 tracking-tight">Dashboard Overview</h1>
                     <p className="text-[14px] text-slate-500 mt-1">Welcome back, here's what happening today.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button variant="secondary" size="md" icon={CalendarDays}>Schedule</Button>
-                    <Button variant="primary" size="md" icon={Plus}>New Group</Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="secondary" size="sm" icon={Bus} onClick={() => toggleModal('transport', true)}>Transport</Button>
+                    <Button variant="secondary" size="sm" icon={UserCheck} onClick={() => toggleModal('assignment', true)}>Assign</Button>
+                    <Button variant="secondary" size="sm" icon={Users} onClick={() => toggleModal('muthawif', true)}>Muthawif</Button>
+                    <Button variant="secondary" size="sm" icon={Briefcase} onClick={() => toggleModal('tourLeader', true)}>Tour Leader</Button>
+                    <Button variant="secondary" size="sm" icon={Building2} onClick={() => toggleModal('handling', true)}>Handling</Button>
                 </div>
             </div>
+
+            {/* Modals */}
+            <TransportModal isOpen={modalOpen.transport} onClose={() => toggleModal('transport', false)} onSuccess={() => { }} />
+            <AssignmentModal isOpen={modalOpen.assignment} onClose={() => toggleModal('assignment', false)} onSuccess={() => { }} />
+            <StaffModal isOpen={modalOpen.muthawif} onClose={() => toggleModal('muthawif', false)} onSuccess={() => { }} type="muthawif" />
+            <StaffModal isOpen={modalOpen.tourLeader} onClose={() => toggleModal('tourLeader', false)} onSuccess={() => { }} type="tour_leader" />
+            <HandlingCompanyModal isOpen={modalOpen.handling} onClose={() => toggleModal('handling', false)} onSuccess={() => { }} />
 
             {/* ── Page Grid (12 Columns) ── */}
             <div className="grid grid-cols-12 gap-[24px]">

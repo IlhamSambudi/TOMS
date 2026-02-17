@@ -7,6 +7,7 @@ import groupRoutes from './routes/groupRoutes.js';
 import handlingRoutes from './routes/handlingRoutes.js';
 import flightRoutes from './routes/flightRoutes.js';
 import staffRoutes from './routes/staffRoutes.js';
+import transportStandaloneRoutes from './routes/transportStandaloneRoutes.js';
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/handling', handlingRoutes);
 app.use('/api/flights', flightRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/transports', transportStandaloneRoutes);
 
 // Health Check
 app.get('/api/health/db', async (req, res) => {

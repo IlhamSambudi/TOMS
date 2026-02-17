@@ -1,6 +1,16 @@
 import pool from '../config/db.js';
 
 const TransportModel = {
+    findAll: async () => {
+        const result = await pool.query(`
+            SELECT t.*, g.group_code 
+            FROM transports t
+            LEFT JOIN groups g ON t.group_id = g.id
+            ORDER BY t.journey_date DESC
+        `);
+        return result.rows;
+    },
+
     findByGroupId: async (groupId) => {
         const result = await pool.query(
             'SELECT * FROM transports WHERE group_id = $1 ORDER BY journey_date ASC',

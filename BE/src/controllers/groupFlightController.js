@@ -7,6 +7,7 @@ const GroupFlightController = {
             const segments = await GroupFlightSegmentModel.findByGroupId(req.params.id);
             res.json({ success: true, message: 'Flight segments retrieved', data: segments });
         } catch (error) {
+            console.error('GroupFlight getSegments error:', error);
             res.status(500).json({ success: false, message: error.message, data: null });
         }
     },
@@ -17,6 +18,7 @@ const GroupFlightController = {
             const segment = await GroupFlightSegmentModel.create(req.params.id, req.body);
             res.status(201).json({ success: true, message: 'Flight segment added', data: segment });
         } catch (error) {
+            console.error('GroupFlight addSegment error:', error);
             // Handle unique constraint violation for segment_order
             if (error.code === '23505') {
                 return res.status(409).json({
@@ -38,6 +40,7 @@ const GroupFlightController = {
             }
             res.json({ success: true, message: 'Flight segment updated', data: segment });
         } catch (error) {
+            console.error('GroupFlight updateSegment error:', error);
             if (error.code === '23505') {
                 return res.status(409).json({
                     success: false,
@@ -55,6 +58,7 @@ const GroupFlightController = {
             await GroupFlightSegmentModel.delete(req.params.segmentId);
             res.json({ success: true, message: 'Flight segment deleted', data: null });
         } catch (error) {
+            console.error('GroupFlight deleteSegment error:', error);
             res.status(500).json({ success: false, message: error.message, data: null });
         }
     }

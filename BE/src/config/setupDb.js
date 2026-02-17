@@ -32,12 +32,28 @@ const createTables = async () => {
             arrival_time TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`,
+        /* 
         `CREATE TABLE IF NOT EXISTS group_flights (
             id SERIAL PRIMARY KEY,
             group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
             flight_id INTEGER REFERENCES flights(id) ON DELETE CASCADE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`,
+        */
+        `DROP TABLE IF EXISTS group_flight_segments CASCADE`,
+        `CREATE TABLE IF NOT EXISTS group_flight_segments (
+            id SERIAL PRIMARY KEY,
+            group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
+            flight_master_id INTEGER REFERENCES flights(id) ON DELETE RESTRICT,
+            flight_date DATE NOT NULL,
+            segment_order INTEGER NOT NULL,
+            override_etd TIME,
+            override_eta TIME,
+            remarks TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (group_id, segment_order)
+        )`,
+        `DROP TABLE IF EXISTS transports CASCADE`,
         `CREATE TABLE IF NOT EXISTS transports (
             id SERIAL PRIMARY KEY,
             group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
@@ -45,6 +61,10 @@ const createTables = async () => {
             vehicle_type VARCHAR(100),
             route VARCHAR(255),
             journey_date TIMESTAMP,
+            pickup_location VARCHAR(255),
+            drop_location VARCHAR(255),
+            pax_count INTEGER,
+            notes TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`,
         `CREATE TABLE IF NOT EXISTS tour_leaders (

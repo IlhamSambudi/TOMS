@@ -10,7 +10,9 @@ import Transport from './pages/Transport';
 import Assignments from './pages/Assignments';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import MasterDataPlaceholder from './pages/MasterDataPlaceholder';
+import HandlingCompanies from './pages/resources/HandlingCompanies';
+import Muthawifs from './pages/resources/Muthawifs';
+import TourLeaders from './pages/resources/TourLeaders';
 
 function App() {
   return (
@@ -23,9 +25,9 @@ function App() {
           <Route path="flights" element={<Flights />} />
           <Route path="transport" element={<Transport />} />
           <Route path="assignments" element={<Assignments />} />
-          <Route path="muthawif" element={<MasterDataPlaceholder />} />
-          <Route path="tour-leaders" element={<MasterDataPlaceholder />} />
-          <Route path="handling-companies" element={<MasterDataPlaceholder />} />
+          <Route path="muthawif" element={<Muthawifs />} />
+          <Route path="tour-leaders" element={<TourLeaders />} />
+          <Route path="handling-companies" element={<HandlingCompanies />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
         </Route>
