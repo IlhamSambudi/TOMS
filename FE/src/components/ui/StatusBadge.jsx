@@ -1,51 +1,105 @@
-import React from 'react';
-import { clsx } from 'clsx';
+import React, { useState, useRef, useEffect } from 'react';
+import { ChevronDown, Check } from 'lucide-react';
 
-const statusStyles = {
-    upcoming: { bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-200', dot: 'bg-sky-500' },
-    active: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', dot: 'bg-emerald-500' },
-    completed: { bg: 'bg-gray-50', text: 'text-gray-500', border: 'border-gray-200', dot: 'bg-gray-400' },
-    'in-saudi': { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', dot: 'bg-amber-500' },
-    draft: { bg: 'bg-slate-50', text: 'text-slate-500', border: 'border-slate-200', dot: 'bg-slate-400' },
-};
+const STATUSES = [
+    {
+        key: 'PREPARATION',
+        label: 'Preparation',
+        bg: 'bg-amber-50',
+        text: 'text-amber-700',
+        border: 'border-amber-200',
+        dot: 'bg-amber-500',
+        hoverBg: '#FFF7ED',
+    },
+    {
+        key: 'DEPARTURE',
+        label: 'Departure',
+        bg: 'bg-blue-50',
+        text: 'text-blue-700',
+        border: 'border-blue-200',
+        dot: 'bg-blue-500',
+        hoverBg: '#EFF6FF',
+    },
+    {
+        key: 'ARRIVAL',
+        label: 'Arrival',
+        bg: 'bg-emerald-50',
+        text: 'text-emerald-700',
+        border: 'border-emerald-200',
+        dot: 'bg-emerald-500',
+        hoverBg: '#ECFDF5',
+    },
+];
 
-const statusLabels = {
-    upcoming: 'Upcoming',
-    active: 'Active',
-    completed: 'Completed',
-    'in-saudi': 'In Saudi',
-    draft: 'Draft',
-};
+const getStyle = (status) =>
+    STATUSES.find(s => s.key === status) || STATUSES[0];
 
-const StatusBadge = ({ status = 'draft', className = '' }) => {
-    const style = statusStyles[status] || statusStyles.draft;
-    const label = statusLabels[status] || status;
+const StatusBadge = ({ status = 'PREPARATION', onChange, className = '' }) => {
+    const style = getStyle(status);
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [open]);
+
+    const handleSelect = (e, key) => {
+        e.stopPropagation();
+        setOpen(false);
+        if (onChange && key !== status) onChange(key);
+    };
+
+    if (!onChange) {
+        // Read-only badge
+        return (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${style.bg} ${style.text} ${style.border} ${className}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+                {style.label}
+            </span>
+        );
+    }
 
     return (
-        <span
-            className={clsx(
-                'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border',
-                style.bg, style.text, style.border,
-                className
+        <div ref={ref} className="relative inline-block" onClick={e => e.stopPropagation()}>
+            <button
+                onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border cursor-pointer transition-all hover:shadow-sm ${style.bg} ${style.text} ${style.border} ${className}`}
+            >
+                <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+                {style.label}
+                <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            {open && (
+                <div
+                    className="absolute z-50 top-full mt-1.5 left-0 min-w-[140px] bg-white rounded-xl shadow-xl border border-slate-100 py-1 overflow-hidden"
+                    onClick={e => e.stopPropagation()}
+                >
+                    {STATUSES.map(s => (
+                        <button
+                            key={s.key}
+                            onClick={(e) => handleSelect(e, s.key)}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-medium transition-colors hover:bg-slate-50"
+                        >
+                            <span className={`w-2 h-2 rounded-full ${s.dot}`} />
+                            <span className="flex-1">{s.label}</span>
+                            {s.key === status && <Check size={11} className="text-teal-600" />}
+                        </button>
+                    ))}
+                </div>
             )}
-        >
-            <span className={clsx('w-1.5 h-1.5 rounded-full', style.dot)} />
-            {label}
-        </span>
+        </div>
     );
 };
 
-// Helper to derive status from group data
-StatusBadge.fromGroup = (group) => {
-    if (!group?.departure_date) return 'draft';
-    const dep = new Date(group.departure_date);
-    const now = new Date();
-    const diffDays = Math.ceil((dep - now) / (1000 * 60 * 60 * 24));
+// Static helper used in Groups.jsx filter
+StatusBadge.fromGroup = (group) => group?.status || 'PREPARATION';
 
-    if (diffDays < 0 && diffDays > -30) return 'in-saudi';
-    if (diffDays <= 0) return 'completed';
-    if (diffDays <= 7) return 'upcoming';
-    return 'active';
-};
-
+export { STATUSES };
 export default StatusBadge;

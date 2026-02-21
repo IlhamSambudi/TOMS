@@ -14,7 +14,10 @@ import {
     Building2,
     Search,
     Bell,
-    Menu
+    Menu,
+    Hotel,
+    Train,
+    BookOpen
 } from 'lucide-react';
 
 const navSections = [
@@ -28,19 +31,17 @@ const navSections = [
         title: 'OPERATIONS',
         items: [
             { path: '/groups', label: 'Groups', icon: Users },
-            { path: '/flights', label: 'Flights', icon: Plane },
-            { path: '/transport', label: 'Transport', icon: Bus }
-        ]
-    },
-    {
-        title: 'ASSIGNMENTS',
-        items: [
+            { path: '/transport', label: 'Transport', icon: Bus },
+            { path: '/hotels', label: 'Hotels', icon: Hotel },
+            { path: '/trains', label: 'Trains', icon: Train },
+            { path: '/rawdah', label: 'Rawdah', icon: BookOpen },
             { path: '/assignments', label: 'Team Assignment', icon: UserCheck }
         ]
     },
     {
         title: 'MASTER DATA',
         items: [
+            { path: '/flights', label: 'Flights', icon: Plane },
             { path: '/muthawif', label: 'Muthawif', icon: BadgeCheck },
             { path: '/tour-leaders', label: 'Tour Leaders', icon: Briefcase },
             { path: '/handling-companies', label: 'Handling Companies', icon: Building2 }
@@ -50,12 +51,6 @@ const navSections = [
         title: 'REPORTS',
         items: [
             { path: '/reports', label: 'Reports', icon: FileText }
-        ]
-    },
-    {
-        title: 'SYSTEM',
-        items: [
-            { path: '/settings', label: 'Settings', icon: Settings }
         ]
     }
 ];

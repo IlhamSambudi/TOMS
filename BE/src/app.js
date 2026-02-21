@@ -8,6 +8,8 @@ import handlingRoutes from './routes/handlingRoutes.js';
 import flightRoutes from './routes/flightRoutes.js';
 import staffRoutes from './routes/staffRoutes.js';
 import transportStandaloneRoutes from './routes/transportStandaloneRoutes.js';
+import assignmentStandaloneRoutes from './routes/assignmentStandaloneRoutes.js';
+import rawdahRoutes from './routes/rawdahRoutes.js';
 
 const app = express();
 
@@ -32,6 +34,8 @@ app.use('/api/handling', handlingRoutes);
 app.use('/api/flights', flightRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/transports', transportStandaloneRoutes);
+app.use('/api/assignments', assignmentStandaloneRoutes);
+app.use('/api/rawdah', rawdahRoutes);
 
 // Health Check
 app.get('/api/health/db', async (req, res) => {

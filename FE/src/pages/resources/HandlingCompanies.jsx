@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, MapPin, Phone, Mail, User, Edit, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import DataTable from '../../components/ui/DataTable';
-import statusBadge from '../../components/ui/StatusBadge'; // Verify import
 import handlingService from '../../services/handlingService';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import HandlingCompanyModal from '../../components/resources/HandlingCompanyModal';
 
 const HandlingCompanies = () => {
     const [data, setData] = useState([]);
-    const [loading, setLoading] = useState(true);
+    // const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
@@ -20,15 +20,14 @@ const HandlingCompanies = () => {
 
     // Fetch Data
     const fetchData = async () => {
-        setLoading(true);
+        // setLoading(true);
         try {
             const result = await handlingService.getAll();
             setData(result);
-        } catch (error) {
-            console.error(error);
+        } catch {
             toast.error('Failed to load handling companies');
         } finally {
-            setLoading(false);
+            // setLoading(false);
         }
     };
 
@@ -135,7 +134,7 @@ const HandlingCompanies = () => {
             await handlingService.delete(selectedId);
             toast.success('Company deleted successfully');
             fetchData();
-        } catch (error) {
+        } catch {
             toast.error('Failed to delete company');
         } finally {
             setIsDeleteDialogOpen(false);

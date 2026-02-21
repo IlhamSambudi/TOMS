@@ -2,6 +2,16 @@ import AssignmentModel from '../models/assignmentModel.js';
 import { TourLeaderModel, MuthawifModel } from '../models/staffModel.js';
 
 const AssignmentController = {
+    // Get all assignments with staff names
+    getAll: async (req, res) => {
+        try {
+            const assignments = await AssignmentModel.getAllAssignments();
+            res.json({ success: true, message: 'Assignments retrieved', data: assignments });
+        } catch (error) {
+            res.status(500).json({ success: false, message: error.message, data: null });
+        }
+    },
+
     // Tour Leaders
     assignTourLeader: async (req, res) => {
         try {

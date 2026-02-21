@@ -1,214 +1,327 @@
-// Dashboard.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, MapPin, Clock, Users, Activity, ArrowRight, MoreHorizontal, Plus, Bus, UserCheck, Briefcase, Building2 } from 'lucide-react';
+import {
+    Users, CalendarDays, MapPin, Clock, ArrowRight,
+    Bus, Hotel, Train, UserCheck, Plane, ArrowUpRight
+} from 'lucide-react';
 import Card from '../components/ui/Card';
 import Skeleton from '../components/ui/Skeleton';
-import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
 import groupService from '../services/groupService';
-import TransportModal from '../components/resources/TransportModal';
-import AssignmentModal from '../components/resources/AssignmentModal';
-import StaffModal from '../components/resources/StaffModal';
-import HandlingCompanyModal from '../components/resources/HandlingCompanyModal';
+import transportService from '../services/transportService';
+import hotelService from '../services/hotelService';
+import trainService from '../services/trainService';
+import assignmentService from '../services/assignmentService';
 
 const Dashboard = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
+
+    // Data states
+    const [groups, setGroups] = useState([]);
     const [summary, setSummary] = useState(null);
-
-    // Modal States
-    const [modalOpen, setModalOpen] = useState({
-        transport: false,
-        assignment: false,
-        muthawif: false,
-        tourLeader: false,
-        handling: false
-    });
-
-    const toggleModal = (key, value) => {
-        setModalOpen(prev => ({ ...prev, [key]: value }));
-    };
+    const [transportCount, setTransportCount] = useState(0);
+    const [hotelCount, setHotelCount] = useState(0);
+    const [trainCount, setTrainCount] = useState(0);
+    const [tourLeaderCount, setTourLeaderCount] = useState(0);
+    const [muthawifCount, setMuthawifCount] = useState(0);
 
     useEffect(() => {
-        const fetchSummary = async () => {
+        const fetchAll = async () => {
             try {
-                const data = await groupService.getOperationsSummary();
-                setSummary(data);
-            } catch (error) {
-                console.error('Dashboard fetch error:', error);
+                const [summaryRes, grpsRes, transRes, tlRes, mtRes] = await Promise.allSettled([
+                    groupService.getOperationsSummary(),
+                    groupService.getAll(),
+                    transportService.getAll(),
+                    assignmentService.getAllTourLeaders(),
+                    assignmentService.getAllMuthawifs(),
+                ]);
+
+                const sum = summaryRes.status === 'fulfilled' ? summaryRes.value : null;
+                setSummary(sum);
+
+                const grps = grpsRes.status === 'fulfilled'
+                    ? (Array.isArray(grpsRes.value) ? grpsRes.value : (grpsRes.value?.data || []))
+                    : [];
+                setGroups(grps);
+
+                if (transRes.status === 'fulfilled') {
+                    const t = Array.isArray(transRes.value) ? transRes.value : (transRes.value?.data || []);
+                    setTransportCount(t.length);
+                }
+
+                if (tlRes.status === 'fulfilled') {
+                    const tl = Array.isArray(tlRes.value) ? tlRes.value : (tlRes.value?.data || []);
+                    setTourLeaderCount(tl.length);
+                }
+
+                if (mtRes.status === 'fulfilled') {
+                    const mt = Array.isArray(mtRes.value) ? mtRes.value : (mtRes.value?.data || []);
+                    setMuthawifCount(mt.length);
+                }
+
+                // Fetch hotels and trains per group (first 10 to avoid too many requests)
+                if (grps.length > 0) {
+                    const slice = grps.slice(0, 10);
+                    const [hotelResults, trainResults] = await Promise.all([
+                        Promise.allSettled(slice.map(g => hotelService.getByGroup(g.id))),
+                        Promise.allSettled(slice.map(g => trainService.getByGroup(g.id))),
+                    ]);
+                    const totalHotels = hotelResults.reduce((acc, r) => {
+                        if (r.status === 'fulfilled') {
+                            const d = Array.isArray(r.value) ? r.value : (r.value?.data || []);
+                            return acc + d.length;
+                        }
+                        return acc;
+                    }, 0);
+                    const totalTrains = trainResults.reduce((acc, r) => {
+                        if (r.status === 'fulfilled') {
+                            const d = Array.isArray(r.value) ? r.value : (r.value?.data || []);
+                            return acc + d.length;
+                        }
+                        return acc;
+                    }, 0);
+                    setHotelCount(totalHotels);
+                    setTrainCount(totalTrains);
+                }
+            } catch (e) {
+                console.error('Dashboard fetch error:', e);
             } finally {
                 setLoading(false);
             }
         };
-        fetchSummary();
+        fetchAll();
     }, []);
 
-    const formatDate = (date) => {
-        if (!date) return '—';
-        return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    };
-
+    const fmt = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
     const daysUntil = (date) => {
         if (!date) return '';
-        const d = Math.ceil((new Date(date) - new Date()) / (1000 * 60 * 60 * 24));
+        const d = Math.ceil((new Date(date) - new Date()) / 86400000);
         if (d === 0) return 'Today';
         if (d === 1) return 'Tomorrow';
-        if (d > 0) return d + 'd';
-        return Math.abs(d) + 'd ago';
+        if (d > 0) return `${d}d`;
+        return `${Math.abs(d)}d ago`;
     };
 
-    if (loading) return <div className="p-8"><Skeleton.Table rows={5} cols={4} /></div>;
+    const statusColor = (s) => {
+        const map = {
+            'PREPARATION': { bg: '#FFFBEB', color: '#B45309' },
+            'DEPARTURE': { bg: '#EFF6FF', color: '#1D4ED8' },
+            'ARRIVAL': { bg: '#ECFDF5', color: '#047857' },
+        };
+        return map[s] || { bg: '#F0FDFA', color: '#0F766E' };
+    };
 
-    // KPI Metrics Data
-    const metrics = [
-        { label: 'Total Active Groups', value: summary?.total || 0, icon: Users, color: 'text-teal-700', bg: 'bg-teal-50' },
-        { label: 'Departing Soon', value: summary?.upcoming?.length || 0, icon: CalendarDays, color: 'text-blue-700', bg: 'bg-blue-50' },
-        { label: 'Currently in Saudi', value: summary?.in_saudi?.length || 0, icon: MapPin, color: 'text-emerald-700', bg: 'bg-emerald-50' },
-        { label: 'Awaiting Prep', value: summary?.awaiting?.length || 0, icon: Clock, color: 'text-amber-700', bg: 'bg-amber-50' },
-    ];
+    const totalGroups = groups.length;
+    const activeGroups = summary?.in_saudi?.length || 0;
+    const upcomingGroups = summary?.upcoming?.length || 0;
+    const prepGroups = summary?.awaiting?.length || 0;
+
+    if (loading) return (
+        <div className="space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map(i => <div key={i} className="h-28 rounded-2xl skeleton" />)}
+            </div>
+            <div className="grid grid-cols-12 gap-6">
+                <div className="col-span-12 xl:col-span-8 h-96 rounded-2xl skeleton" />
+                <div className="col-span-12 xl:col-span-4 h-96 rounded-2xl skeleton" />
+            </div>
+        </div>
+    );
 
     return (
         <>
-            {/* ── Page Header ── */}
-            <div className="flex items-center justify-between mb-[24px]">
+            {/* ── Header ── */}
+            <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-[24px] font-bold text-slate-900 tracking-tight">Dashboard Overview</h1>
-                    <p className="text-[14px] text-slate-500 mt-1">Welcome back, here's what happening today.</p>
+                    <h1 className="text-[22px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                        Dashboard
+                    </h1>
+                    <p className="text-[13px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                        Travel Operations Management — live overview
+                    </p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="secondary" size="sm" icon={Bus} onClick={() => toggleModal('transport', true)}>Transport</Button>
-                    <Button variant="secondary" size="sm" icon={UserCheck} onClick={() => toggleModal('assignment', true)}>Assign</Button>
-                    <Button variant="secondary" size="sm" icon={Users} onClick={() => toggleModal('muthawif', true)}>Muthawif</Button>
-                    <Button variant="secondary" size="sm" icon={Briefcase} onClick={() => toggleModal('tourLeader', true)}>Tour Leader</Button>
-                    <Button variant="secondary" size="sm" icon={Building2} onClick={() => toggleModal('handling', true)}>Handling</Button>
-                </div>
+                <button
+                    onClick={() => navigate('/groups')}
+                    className="flex items-center gap-1.5 text-[13px] font-semibold px-3 py-2 rounded-xl transition-all"
+                    style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                >
+                    <Users size={14} /> Manage Groups <ArrowUpRight size={13} />
+                </button>
             </div>
 
-            {/* Modals */}
-            <TransportModal isOpen={modalOpen.transport} onClose={() => toggleModal('transport', false)} onSuccess={() => { }} />
-            <AssignmentModal isOpen={modalOpen.assignment} onClose={() => toggleModal('assignment', false)} onSuccess={() => { }} />
-            <StaffModal isOpen={modalOpen.muthawif} onClose={() => toggleModal('muthawif', false)} onSuccess={() => { }} type="muthawif" />
-            <StaffModal isOpen={modalOpen.tourLeader} onClose={() => toggleModal('tourLeader', false)} onSuccess={() => { }} type="tour_leader" />
-            <HandlingCompanyModal isOpen={modalOpen.handling} onClose={() => toggleModal('handling', false)} onSuccess={() => { }} />
-
-            {/* ── Page Grid (12 Columns) ── */}
-            <div className="grid grid-cols-12 gap-[24px]">
-
-                {/* 1. Metrics (Span 3 each) */}
-                {metrics.map((m, i) => (
-                    <div key={i} className="col-span-12 md:col-span-6 xl:col-span-3">
-                        <Card className="flex flex-col justify-between hover:shadow-md transition-all h-[140px]" padding>
-                            <div className="flex items-start justify-between mb-4">
-                                <div className={`w-[40px] h-[40px] flex items-center justify-center rounded-[12px] ${m.bg} ${m.color}`}>
-                                    <m.icon size={20} strokeWidth={2} />
-                                </div>
-                                {i === 0 && <span className="text-[11px] font-bold text-teal-700 bg-teal-50 px-2 py-1 rounded-full">+12%</span>}
+            {/* ── KPI Row ── */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {[
+                    { label: 'Total Groups', value: totalGroups, icon: Users, accent: '#0F766E', light: '#F0FDFA', onClick: () => navigate('/groups') },
+                    { label: 'In Saudi', value: activeGroups, icon: MapPin, accent: '#1D4ED8', light: '#EFF6FF', onClick: () => navigate('/groups') },
+                    { label: 'Upcoming', value: upcomingGroups, icon: CalendarDays, accent: '#7C3AED', light: '#F5F3FF', onClick: () => navigate('/groups') },
+                    { label: 'Preparation', value: prepGroups, icon: Clock, accent: '#B45309', light: '#FFFBEB', onClick: () => navigate('/groups') },
+                ].map((m, i) => (
+                    <div key={i} onClick={m.onClick}
+                        className="rounded-2xl p-5 cursor-pointer transition-all hover:shadow-md"
+                        style={{ background: 'white', border: '1px solid var(--border)' }}>
+                        <div className="flex items-start justify-between mb-3">
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                                style={{ background: m.light, color: m.accent }}>
+                                <m.icon size={17} />
                             </div>
-                            <div>
-                                <h3 className="text-[28px] font-bold text-slate-900 tracking-tight leading-none mb-2">{m.value}</h3>
-                                <p className="text-[12px] font-semibold text-slate-500 uppercase tracking-[0.06em]">{m.label}</p>
-                            </div>
-                        </Card>
+                            <ArrowUpRight size={14} style={{ color: 'var(--text-muted)' }} />
+                        </div>
+                        <div className="text-[28px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>{m.value}</div>
+                        <div className="text-[11px] font-semibold uppercase tracking-wider mt-1" style={{ color: 'var(--text-muted)' }}>{m.label}</div>
                     </div>
                 ))}
+            </div>
 
-                {/* 2. Main Content Area (Span 8) */}
-                <div className="col-span-12 xl:col-span-8 flex flex-col gap-[24px]">
+            {/* ── Resources Row ── */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                {[
+                    { label: 'Transport', value: transportCount, icon: Bus, path: '/transport' },
+                    { label: 'Hotels', value: hotelCount, icon: Hotel, path: '/hotels' },
+                    { label: 'Trains', value: trainCount, icon: Train, path: '/trains' },
+                    { label: 'Tour Leaders', value: tourLeaderCount, icon: UserCheck, path: '/tour-leaders' },
+                    { label: 'Muthawifs', value: muthawifCount, icon: Users, path: '/muthawif' },
+                ].map((r, i) => (
+                    <div key={i} onClick={() => navigate(r.path)}
+                        className="rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer transition-all hover:shadow-sm"
+                        style={{ background: 'white', border: '1px solid var(--border)' }}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                            style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
+                            <r.icon size={15} />
+                        </div>
+                        <div>
+                            <div className="text-[16px] font-bold" style={{ color: 'var(--text-primary)' }}>{r.value}</div>
+                            <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{r.label}</div>
+                        </div>
+                    </div>
+                ))}
+            </div>
 
-                    {/* Upcoming Departures Panel */}
+            {/* ── Main Two-Column ── */}
+            <div className="grid grid-cols-12 gap-6">
+
+                {/* Left — Upcoming Departures */}
+                <div className="col-span-12 xl:col-span-7 flex flex-col gap-5">
                     <Card>
-                        <div className="flex items-center justify-between mb-[24px]">
-                            <h3 className="text-[16px] font-semibold text-slate-900">Upcoming Departures</h3>
-                            <button onClick={() => navigate('/groups')} className="text-[13px] font-semibold text-[#0F766E] hover:text-[#115E59] flex items-center gap-1 transition-colors px-3 py-1.5 hover:bg-teal-50 rounded-[8px]">
-                                View All <ArrowRight size={14} />
+                        <div className="flex items-center justify-between mb-5">
+                            <h3 className="text-[15px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                Upcoming Departures
+                            </h3>
+                            <button onClick={() => navigate('/groups')}
+                                className="text-[12px] font-semibold flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors"
+                                style={{ color: 'var(--accent)', background: 'var(--accent-light)' }}>
+                                View All <ArrowRight size={12} />
                             </button>
                         </div>
-
-                        <div className="flex flex-col gap-[16px]">
-                            {summary?.upcoming?.slice(0, 5).map(item => (
-                                <div
-                                    key={item.id}
-                                    onClick={() => navigate(`/groups/${item.id}`)}
-                                    // List Item - 16px Padding
-                                    className="group flex items-center justify-between p-[16px] rounded-[12px] hover:bg-[#F8FAF9] border border-transparent hover:border-[#E2E8F0] cursor-pointer transition-all"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-[44px] h-[44px] rounded-[12px] bg-blue-50 text-blue-700 flex items-center justify-center text-[12px] font-bold">
-                                            {item.group_code.split('-').pop()}
-                                        </div>
-                                        <div>
-                                            <p className="text-[14px] font-semibold text-slate-900 group-hover:text-[#0F766E] transition-colors">{item.group_code}</p>
-                                            <p className="text-[12px] text-slate-500 font-medium mt-0.5">{item.program_type} • {item.total_pax} Pax</p>
-                                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            {summary?.upcoming?.slice(0, 6).map(item => (
+                                <div key={item.id} onClick={() => navigate(`/groups/${item.id}`)}
+                                    className="p-4.5 bg-white rounded-xl cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1"
+                                    style={{ border: '1px solid var(--border-light)' }}>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <Badge variant="warning">UPCOMING</Badge>
+                                        <span className="text-[11px] font-bold" style={{ color: 'var(--accent)' }}>
+                                            {daysUntil(item.departure_date)}
+                                        </span>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-[13px] font-semibold text-slate-700">{formatDate(item.departure_date)}</p>
-                                        <p className="text-[11px] font-bold text-blue-600 mt-0.5">{daysUntil(item.departure_date)}</p>
+                                    <p className="text-[13px] font-bold truncate" style={{ color: 'var(--text-primary)' }} title={item.group_code}>
+                                        {item.group_code}
+                                    </p>
+                                    <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{item.program_type}</p>
+                                    <div className="mt-3 pt-2.5 border-t flex items-center justify-between text-[11px] font-semibold"
+                                        style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+                                        <div className="flex items-center gap-1.5"><Users size={11} /> {item.total_pax || 0} pax</div>
+                                        <div className="flex items-center gap-1.5"><CalendarDays size={11} /> {fmt(item.departure_date)}</div>
                                     </div>
                                 </div>
                             ))}
-                            {summary?.upcoming?.length === 0 && (
-                                <p className="text-center text-slate-400 py-8 text-sm italic">No upcoming departures.</p>
+                            {(!summary?.upcoming || summary.upcoming.length === 0) && (
+                                <p className="col-span-2 text-center py-8 text-[13px]" style={{ color: 'var(--text-muted)' }}>No upcoming departures</p>
                             )}
                         </div>
                     </Card>
 
-                    {/* Active In Saudi */}
+                    {/* Active in Saudi */}
                     <Card>
-                        <div className="flex items-center justify-between mb-[24px]">
-                            <h3 className="text-[16px] font-semibold text-slate-900">Active in Saudi</h3>
+                        <div className="flex items-center justify-between mb-5">
+                            <h3 className="text-[15px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                🇸🇦 Active in Saudi Arabia
+                            </h3>
+                            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full"
+                                style={{ background: '#ECFDF5', color: '#047857' }}>
+                                {summary?.in_saudi?.length || 0} group
+                            </span>
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                        <div className="grid grid-cols-2 gap-3">
                             {summary?.in_saudi?.slice(0, 4).map(item => (
-                                <div
-                                    key={item.id}
-                                    onClick={() => navigate(`/groups/${item.id}`)}
-                                    className="p-[20px] rounded-[14px] border border-[#E2E8F0] hover:border-emerald-300 hover:shadow-md cursor-pointer transition-all bg-[#F8FAF9] hover:bg-white"
-                                >
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="text-[24px]">🇸🇦</div>
-                                        <span className="text-[10px] font-bold text-emerald-700 bg-white border border-emerald-100 px-2.5 py-1 rounded-full shadow-sm">ACTIVE</span>
+                                <div key={item.id} onClick={() => navigate(`/groups/${item.id}`)}
+                                    className="p-4.5 bg-white rounded-xl cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1"
+                                    style={{ border: '1px solid var(--border-light)' }}>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <Badge variant="success">ACTIVE</Badge>
+                                        <Plane size={13} style={{ color: 'var(--text-muted)' }} />
                                     </div>
-                                    <p className="text-[14px] font-bold text-slate-900 truncate">{item.group_code}</p>
-                                    <p className="text-[12px] text-slate-500 mt-1 font-medium">{item.program_type}</p>
-                                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2 text-[12px] font-semibold text-slate-600">
-                                        <Users size={14} className="text-emerald-600" /> {item.total_pax} Pax
+                                    <p className="text-[13px] font-bold truncate" style={{ color: 'var(--text-primary)' }} title={item.group_code}>
+                                        {item.group_code}
+                                    </p>
+                                    <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{item.program_type}</p>
+                                    <div className="mt-3 pt-2.5 border-t flex items-center gap-1.5 text-[11px] font-semibold"
+                                        style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+                                        <Users size={11} /> {item.total_pax} pax
                                     </div>
                                 </div>
                             ))}
-                            {summary?.in_saudi?.length === 0 && (
-                                <p className="col-span-2 text-center text-slate-400 py-8 text-sm italic">No active groups in Saudi.</p>
+                            {(!summary?.in_saudi || summary.in_saudi.length === 0) && (
+                                <p className="col-span-2 text-center py-8 text-[13px]" style={{ color: 'var(--text-muted)' }}>
+                                    No active groups in Saudi Arabia
+                                </p>
                             )}
                         </div>
                     </Card>
-
                 </div>
 
-                {/* 3. Sidebar Panel (Span 4) */}
-                <div className="col-span-12 xl:col-span-4 flex flex-col gap-[24px]">
-                    {/* Activity Log */}
-                    <Card className="h-full max-h-[600px] flex flex-col">
-                        <div className="flex items-center justify-between mb-[24px] flex-shrink-0">
-                            <h3 className="text-[16px] font-semibold text-slate-900">Activity Log</h3>
-                            <button className="text-slate-400 hover:text-[#0F766E] transition-colors"><MoreHorizontal size={20} /></button>
+                {/* Right — All Groups list */}
+                <div className="col-span-12 xl:col-span-5">
+                    <Card className="h-full">
+                        <div className="flex items-center justify-between mb-5">
+                            <h3 className="text-[15px] font-semibold" style={{ color: 'var(--text-primary)' }}>All Groups</h3>
+                            <button onClick={() => navigate('/groups')}
+                                className="text-[12px] font-semibold flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors"
+                                style={{ color: 'var(--accent)', background: 'var(--accent-light)' }}>
+                                Manage <ArrowRight size={12} />
+                            </button>
                         </div>
-
-                        <div className="relative pl-[24px] border-l border-[#E2E8F0] space-y-[24px] overflow-y-auto pr-2 custom-scrollbar pb-4">
-                            {summary?.recent?.slice(0, 10).map((log, i) => (
-                                <div key={i} className="relative group">
-                                    <div className="absolute -left-[29px] top-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-slate-300 group-hover:bg-[#0F766E] group-hover:scale-125 transition-all shadow-sm"></div>
-                                    <p className="text-[13px] text-slate-600 leading-relaxed group-hover:text-slate-900 transition-colors">
-                                        <span className="font-semibold text-slate-900 block mb-1">Group {log.group_code.split('-').slice(1).join('-')}</span>
-                                        Status updated to <span className="text-[#0F766E] font-medium">{log.status || 'Active'}</span>.
-                                    </p>
-                                    <p className="text-[11px] text-slate-400 mt-1.5 font-medium flex items-center gap-1">
-                                        <Clock size={10} /> {formatDate(log.updated_at)}
-                                    </p>
-                                </div>
-                            ))}
-                            {summary?.recent?.length === 0 && (
-                                <p className="text-center text-slate-400 py-8 text-sm italic">No recent activity.</p>
+                        <div className="space-y-3 max-h-[560px] overflow-y-auto pr-1">
+                            {groups.slice(0, 20).map((g) => {
+                                const sc = statusColor(g.status);
+                                return (
+                                    <div key={g.id} onClick={() => navigate(`/groups/${g.id}`)}
+                                        className="p-4.5 bg-white rounded-xl cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1"
+                                        style={{ border: '1px solid var(--border-light)' }}>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
+                                                style={{ background: sc?.bg || '#F0FDFA', color: sc?.color || '#0F766E' }}>
+                                                {g.status || 'N/A'}
+                                            </span>
+                                            <div className="w-auto"></div>
+                                        </div>
+                                        <p className="text-[13px] font-bold truncate" style={{ color: 'var(--text-primary)' }} title={g.group_code}>
+                                            {g.group_code}
+                                        </p>
+                                        <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{g.program_type}</p>
+                                        <div className="mt-3 pt-2.5 border-t flex items-center justify-between text-[11px] font-semibold"
+                                            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+                                            <div className="flex items-center gap-1.5"><Users size={11} /> {g.total_pax || 0} pax</div>
+                                            <div className="flex items-center gap-1.5"><CalendarDays size={11} /> {g.departure_date ? fmt(g.departure_date) : 'TBD'}</div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {groups.length === 0 && (
+                                <p className="text-center py-10 text-[13px]" style={{ color: 'var(--text-muted)' }}>No groups found</p>
                             )}
                         </div>
                     </Card>

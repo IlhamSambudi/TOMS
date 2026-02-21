@@ -29,6 +29,10 @@ const groupService = {
         const res = await api.delete(`/groups/${id}`);
         return res.data;
     },
+    updateStatus: async (id, status) => {
+        const res = await api.patch(`/groups/${id}/status`, { status });
+        return res.data;
+    },
 };
 
 export default groupService;

@@ -20,23 +20,23 @@ const TransportModel = {
     },
 
     create: async (groupId, data) => {
-        const { provider_name, vehicle_type, route, journey_date, pickup_location, drop_location, pax_count, notes } = data;
+        const { provider_name, vehicle_type, route, journey_date, departure_time, pickup_location, drop_location, pax_count } = data;
         const result = await pool.query(
-            `INSERT INTO transports (group_id, provider_name, vehicle_type, route, journey_date, pickup_location, drop_location, pax_count, notes)
+            `INSERT INTO transports (group_id, provider_name, vehicle_type, route, journey_date, departure_time, pickup_location, drop_location, pax_count)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-            [groupId, provider_name, vehicle_type, route, journey_date, pickup_location || null, drop_location || null, pax_count || null, notes || null]
+            [groupId, provider_name, vehicle_type, route, journey_date, departure_time || null, pickup_location || null, drop_location || null, pax_count || null]
         );
         return result.rows[0];
     },
 
     update: async (transportId, data) => {
-        const { provider_name, vehicle_type, route, journey_date, pickup_location, drop_location, pax_count, notes } = data;
+        const { provider_name, vehicle_type, route, journey_date, departure_time, pickup_location, drop_location, pax_count } = data;
         const result = await pool.query(
             `UPDATE transports 
              SET provider_name = $1, vehicle_type = $2, route = $3, journey_date = $4,
-                 pickup_location = $5, drop_location = $6, pax_count = $7, notes = $8
+                 departure_time = $5, pickup_location = $6, drop_location = $7, pax_count = $8
              WHERE id = $9 RETURNING *`,
-            [provider_name, vehicle_type, route, journey_date, pickup_location || null, drop_location || null, pax_count || null, notes || null, transportId]
+            [provider_name, vehicle_type, route, journey_date, departure_time || null, pickup_location || null, drop_location || null, pax_count || null, transportId]
         );
         return result.rows[0];
     },

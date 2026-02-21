@@ -1,6 +1,27 @@
 import pool from '../config/db.js';
 
 const AssignmentModel = {
+    getAllAssignments: async () => {
+        const result = await pool.query(`
+            SELECT 
+                g.id,
+                g.group_code,
+                g.program_type,
+                g.departure_date,
+                g.total_pax,
+                STRING_AGG(DISTINCT tl.name, ', ') as tour_leaders,
+                STRING_AGG(DISTINCT m.name, ', ') as muthawifs
+            FROM groups g
+            LEFT JOIN group_assignments ga_tl ON g.id = ga_tl.group_id AND ga_tl.role = 'TOUR_LEADER'
+            LEFT JOIN tour_leaders tl ON ga_tl.tour_leader_id = tl.id
+            LEFT JOIN group_assignments ga_m ON g.id = ga_m.group_id AND ga_m.role = 'MUTHAWIF'
+            LEFT JOIN muthawifs m ON ga_m.muthawif_id = m.id
+            GROUP BY g.id, g.group_code, g.program_type, g.departure_date, g.total_pax
+            ORDER BY g.departure_date DESC NULLS LAST, g.group_code
+        `);
+        return result.rows;
+    },
+
     assignTourLeader: async (groupId, tourLeaderId) => {
         const result = await pool.query(
             `INSERT INTO group_assignments (group_id, tour_leader_id, role)

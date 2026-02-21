@@ -1,6 +1,10 @@
 import api from './api';
 
 const assignmentService = {
+    getAll: async () => {
+        const res = await api.get('/assignments');
+        return Array.isArray(res.data) ? res.data : (res.data?.data || []);
+    },
     getTourLeaders: async (groupId) => {
         const res = await api.get(`/groups/${groupId}/assignments/tour-leaders`);
         return res.data;

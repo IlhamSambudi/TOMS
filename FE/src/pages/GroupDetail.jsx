@@ -3,12 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plane, Bus, UserCheck, FileText, Eye, CalendarDays, Users, Plus, Pencil, Trash2, Clock, X, MapPin } from 'lucide-react';
+import { ArrowLeft, Plane, Bus, UserCheck, FileText, Eye, CalendarDays, Users, Plus, Pencil, Trash2, Clock, X, MapPin, Printer, Hotel, Train, BookOpen } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
-import StatusBadge from '../components/ui/StatusBadge';
 import Skeleton from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -18,13 +17,19 @@ import groupFlightSegmentService from '../services/groupFlightSegmentService';
 import flightService from '../services/flightService';
 import transportService from '../services/transportService';
 import assignmentService from '../services/assignmentService';
+import hotelService from '../services/hotelService';
+import trainService from '../services/trainService';
+import rawdahService from '../services/rawdahService';
 
 const tabs = [
     { key: 'overview', label: 'Overview', icon: Eye },
     { key: 'flights', label: 'Flights', icon: Plane },
     { key: 'transport', label: 'Transport', icon: Bus },
+    { key: 'hotels', label: 'Hotels', icon: Hotel },
+    { key: 'trains', label: 'Trains', icon: Train },
     { key: 'team', label: 'Team Assignment', icon: UserCheck },
     { key: 'documents', label: 'Documents', icon: FileText },
+    { key: 'rawdah', label: 'Rawdah', icon: BookOpen },
     { key: 'notes', label: 'Notes', icon: FileText },
 ];
 
@@ -48,6 +53,23 @@ const GroupDetail = () => {
     const [editTransport, setEditTransport] = useState(null);
     const transportForm = useForm();
 
+    // Hotels
+    const [hotels, setHotels] = useState([]);
+    const [hotelModal, setHotelModal] = useState(false);
+    const [editHotel, setEditHotel] = useState(null);
+    const hotelForm = useForm();
+
+    // Trains
+    const [trains, setTrains] = useState([]);
+    const [trainModal, setTrainModal] = useState(false);
+    const [editTrain, setEditTrain] = useState(null);
+    const trainForm = useForm();
+
+    // Rawdah
+    const [rawdahData, setRawdahData] = useState(null);
+    const [rawdahModal, setRawdahModal] = useState(false);
+    const rawdahForm = useForm();
+
     // Team
     const [tourLeaders, setTourLeaders] = useState([]);
     const [muthawifs, setMuthawifs] = useState([]);
@@ -67,13 +89,23 @@ const GroupDetail = () => {
             const data = await groupService.getById(id);
             setGroup(data);
             setNotesValue(data?.notes || '');
-        } catch (e) {
+        } catch {
             toast.error('Failed to load group');
             navigate('/groups');
         } finally {
             setLoading(false);
         }
     }, [id, navigate]);
+
+    const handleStatusChange = async (newStatus) => {
+        try {
+            await groupService.updateStatus(id, newStatus);
+            toast.success(`Status updated to ${newStatus}`);
+            fetchGroup();
+        } catch (e) {
+            toast.error(e.message || 'Failed to update status');
+        }
+    };
 
     const fetchFlights = useCallback(async () => {
         try {
@@ -112,6 +144,21 @@ const GroupDetail = () => {
     useEffect(() => { if (activeTab === 'flights') fetchFlights(); }, [activeTab, fetchFlights]);
     useEffect(() => { if (activeTab === 'transport') fetchTransports(); }, [activeTab, fetchTransports]);
     useEffect(() => { if (activeTab === 'team') fetchTeam(); }, [activeTab, fetchTeam]);
+    useEffect(() => {
+        if (activeTab === 'hotels') {
+            hotelService.getByGroup(id).then(d => setHotels(Array.isArray(d) ? d : [])).catch(console.error);
+        }
+    }, [activeTab, id]);
+    useEffect(() => {
+        if (activeTab === 'trains') {
+            trainService.getByGroup(id).then(d => setTrains(Array.isArray(d) ? d : [])).catch(console.error);
+        }
+    }, [activeTab, id]);
+    useEffect(() => {
+        if (activeTab === 'rawdah') {
+            rawdahService.getByGroup(id).then(d => setRawdahData(d)).catch(console.error);
+        }
+    }, [activeTab, id]);
 
     const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
     const formatTime = (t) => t ? t.substring(0, 5) : '—';
@@ -156,10 +203,10 @@ const GroupDetail = () => {
                 provider_name: t.provider_name, vehicle_type: t.vehicle_type, route: t.route,
                 journey_date: t.journey_date?.split('T')[0],
                 pickup_location: t.pickup_location || '', drop_location: t.drop_location || '',
-                pax_count: t.pax_count || '', notes: t.notes || '',
+                pax_count: t.pax_count || '', departure_time: t.departure_time || '',
             });
         } else {
-            transportForm.reset({ provider_name: '', vehicle_type: '', route: '', journey_date: '', pickup_location: '', drop_location: '', pax_count: '', notes: '' });
+            transportForm.reset({ provider_name: '', vehicle_type: '', route: '', journey_date: '', pickup_location: '', drop_location: '', pax_count: '', departure_time: '' });
         }
         setTransportModal(true);
     };
@@ -175,6 +222,85 @@ const GroupDetail = () => {
             }
             setTransportModal(false);
             fetchTransports();
+        } catch (e) { toast.error(e.message || 'Failed'); }
+    };
+
+    /* ── Hotel CRUD ── */
+    const openHotelModal = (h = null) => {
+        setEditHotel(h);
+        hotelForm.reset(h ? {
+            city: h.city, hotel_name: h.hotel_name,
+            check_in: h.check_in?.split('T')[0] || '',
+            check_out: h.check_out?.split('T')[0] || '',
+            room_dbl: h.room_dbl || 0, room_trpl: h.room_trpl || 0,
+            room_quad: h.room_quad || 0, room_quint: h.room_quint || 0,
+            reservation_no: h.reservation_no || '',
+        } : { city: '', hotel_name: '', check_in: '', check_out: '', room_dbl: 0, room_trpl: 0, room_quad: 0, room_quint: 0, reservation_no: '' });
+        setHotelModal(true);
+    };
+
+    const submitHotel = async (data) => {
+        try {
+            if (editHotel) {
+                await hotelService.update(id, editHotel.id, data);
+                toast.success('Hotel updated');
+            } else {
+                await hotelService.create(id, data);
+                toast.success('Hotel added');
+            }
+            setHotelModal(false);
+            hotelService.getByGroup(id).then(d => setHotels(Array.isArray(d) ? d : []));
+        } catch (e) { toast.error(e.message || 'Failed'); }
+    };
+
+    /* ── Train CRUD ── */
+    const openTrainModal = (t = null) => {
+        setEditTrain(t);
+        trainForm.reset(t ? {
+            train_date: t.train_date?.split('T')[0] || '',
+            from_station: t.from_station || '',
+            to_station: t.to_station || '',
+            departure_time: t.departure_time || '',
+            total_hajj: t.total_hajj || '',
+            remarks: t.remarks || '',
+        } : { train_date: '', from_station: '', to_station: '', departure_time: '', total_hajj: '', remarks: '' });
+        setTrainModal(true);
+    };
+
+    const submitTrain = async (data) => {
+        try {
+            if (editTrain) {
+                await trainService.update(id, editTrain.id, data);
+                toast.success('Train reservation updated');
+            } else {
+                await trainService.create(id, data);
+                toast.success('Train reservation added');
+            }
+            setTrainModal(false);
+            trainService.getByGroup(id).then(d => setTrains(Array.isArray(d) ? d : []));
+        } catch (e) { toast.error(e.message || 'Failed'); }
+    };
+
+    /* ── Rawdah CRUD ── */
+    const openRawdahModal = () => {
+        rawdahForm.reset(rawdahData ? {
+            men_date: rawdahData.men_date?.split('T')[0] || '',
+            men_time: rawdahData.men_time || '',
+            men_pax: rawdahData.men_pax || '',
+            women_date: rawdahData.women_date?.split('T')[0] || '',
+            women_time: rawdahData.women_time || '',
+            women_pax: rawdahData.women_pax || ''
+        } : { men_date: '', men_time: '', men_pax: '', women_date: '', women_time: '', women_pax: '' });
+        setRawdahModal(true);
+    };
+
+    const submitRawdah = async (data) => {
+        try {
+            await rawdahService.upsert(id, data);
+            toast.success('Rawdah permits updated');
+            setRawdahModal(false);
+            const updated = await rawdahService.getByGroup(id);
+            setRawdahData(updated);
         } catch (e) { toast.error(e.message || 'Failed'); }
     };
 
@@ -200,6 +326,8 @@ const GroupDetail = () => {
         try {
             if (deleteType === 'segment') { await groupFlightSegmentService.delete(id, deleteTarget.id); fetchFlights(); }
             if (deleteType === 'transport') { await transportService.delete(id, deleteTarget.id); fetchTransports(); }
+            if (deleteType === 'hotel') { await hotelService.delete(id, deleteTarget.id); hotelService.getByGroup(id).then(d => setHotels(Array.isArray(d) ? d : [])); }
+            if (deleteType === 'train') { await trainService.delete(id, deleteTarget.id); trainService.getByGroup(id).then(d => setTrains(Array.isArray(d) ? d : [])); }
             toast.success('Deleted');
             setDeleteTarget(null);
         } catch (e) { toast.error(e.message || 'Failed'); }
@@ -212,7 +340,7 @@ const GroupDetail = () => {
             toast.success('Notes saved');
             setNotesEditing(false);
             fetchGroup();
-        } catch (e) { toast.error('Failed'); }
+        } catch { toast.error('Failed'); }
     };
 
     if (loading) return (
@@ -224,7 +352,13 @@ const GroupDetail = () => {
 
     if (!group) return <EmptyState title="Group not found" />;
 
-    const status = StatusBadge.fromGroup(group);
+    const currentStatus = group.status || 'PREPARATION';
+    const STATUS_STEPS = [
+        { key: 'PREPARATION', label: 'Preparation', color: '#B45309', bg: '#FFFBEB', dot: '#F59E0B' },
+        { key: 'DEPARTURE', label: 'Departure', color: '#1D4ED8', bg: '#EFF6FF', dot: '#3B82F6' },
+        { key: 'ARRIVAL', label: 'Arrival', color: '#047857', bg: '#ECFDF5', dot: '#10B981' },
+    ];
+    const currentIdx = STATUS_STEPS.findIndex(s => s.key === currentStatus);
 
     return (
         <div className="space-y-6">
@@ -240,12 +374,50 @@ const GroupDetail = () => {
                     <div className="flex items-center gap-3 flex-wrap">
                         <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{group.group_code}</h1>
                         <Badge variant="primary">{group.program_type}</Badge>
-                        <StatusBadge status={status} />
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-[12px]" style={{ color: 'var(--text-muted)' }}>
                         <span className="flex items-center gap-1"><CalendarDays size={12} /> {formatDate(group.departure_date)}</span>
                         <span className="flex items-center gap-1"><Users size={12} /> {group.total_pax} pax</span>
                         {group.handling_company_name && <span>{group.handling_company_name}</span>}
+                    </div>
+
+                    {/* ── Status Stepper ── */}
+                    <div className="mt-4 flex items-center gap-0">
+                        {STATUS_STEPS.map((step, idx) => {
+                            const isDone = idx < currentIdx;
+                            const isCurrent = idx === currentIdx;
+                            const isFuture = idx > currentIdx;
+                            return (
+                                <div key={step.key} className="flex items-center">
+                                    <button
+                                        onClick={() => handleStatusChange(step.key)}
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all text-[12px] font-semibold hover:bg-slate-50"
+                                        style={{
+                                            background: isCurrent ? step.bg : isDone ? '#F8FAFC' : 'transparent',
+                                            color: isCurrent ? step.color : isDone ? '#64748B' : '#94A3B8',
+                                            border: isCurrent ? `1.5px solid ${step.dot}` : '1.5px solid transparent',
+                                            cursor: 'pointer',
+                                            opacity: 1,
+                                        }}
+                                    >
+                                        <span
+                                            className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-colors"
+                                            style={{
+                                                background: isCurrent ? step.dot : isDone ? '#10B981' : '#CBD5E1',
+                                                color: 'white'
+                                            }}
+                                        >
+                                            {isDone ? '✓' : idx + 1}
+                                        </span>
+                                        {step.label}
+                                    </button>
+                                    {idx < STATUS_STEPS.length - 1 && (
+                                        <div className="w-6 h-[2px] mx-0.5 rounded-full"
+                                            style={{ background: idx < currentIdx ? '#10B981' : '#E2E8F0' }} />
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -275,7 +447,12 @@ const GroupDetail = () => {
                         onDelete={t => { setDeleteTarget(t); setDeleteType('transport'); }} formatDate={formatDate} />}
                     {activeTab === 'team' && <TeamTab tourLeaders={tourLeaders} muthawifs={muthawifs} allTourLeaders={allTourLeaders}
                         allMuthawifs={allMuthawifs} onAssign={assignStaff} onUnassign={unassignStaff} />}
-                    {activeTab === 'documents' && <DocumentsTab />}
+                    {activeTab === 'documents' && <DocumentsTab groupId={id} />}
+                    {activeTab === 'hotels' && <HotelTab hotels={hotels} openModal={openHotelModal}
+                        onDelete={h => { setDeleteTarget(h); setDeleteType('hotel'); }} formatDate={formatDate} />}
+                    {activeTab === 'trains' && <TrainTab trains={trains} openModal={openTrainModal}
+                        onDelete={t => { setDeleteTarget(t); setDeleteType('train'); }} formatDate={formatDate} formatTime={formatTime} />}
+                    {activeTab === 'rawdah' && <RawdahTab data={rawdahData} openModal={openRawdahModal} formatDate={formatDate} />}
                     {activeTab === 'notes' && <NotesTab notes={notesValue} editing={notesEditing} setEditing={setNotesEditing}
                         value={notesValue} onChange={setNotesValue} onSave={saveNotes} />}
                 </motion.div>
@@ -366,7 +543,7 @@ const GroupDetail = () => {
                         <Input label="Journey Date" type="date" {...transportForm.register('journey_date', { required: true })} />
                         <Input label="Pax Count" type="number" {...transportForm.register('pax_count')} />
                     </div>
-                    <Input label="Notes (Time)" {...transportForm.register('notes')} placeholder="e.g. 09:00 AM" />
+                    <Input label="Departure Time" type="time" {...transportForm.register('departure_time')} />
                     <div className="flex gap-2 justify-end pt-1">
                         <Button variant="secondary" type="button" onClick={() => setTransportModal(false)}>Cancel</Button>
                         <Button type="submit" loading={transportForm.formState.isSubmitting}>{editTransport ? 'Update' : 'Add'}</Button>
@@ -374,11 +551,223 @@ const GroupDetail = () => {
                 </form>
             </Modal>
 
+            {/* Hotel Modal */}
+            <Modal isOpen={hotelModal} onClose={() => setHotelModal(false)} title={editHotel ? 'Edit Hotel' : 'Add Hotel'}>
+                <form onSubmit={hotelForm.handleSubmit(submitHotel)} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>City</label>
+                            <select {...hotelForm.register('city', { required: true })} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm bg-white"
+                                style={{ border: '1px solid var(--border)', outline: 'none' }}>
+                                <option value="">Select city</option>
+                                <option value="Makkah">Makkah</option>
+                                <option value="Madinah">Madinah</option>
+                            </select>
+                        </div>
+                        <Input label="Hotel Name" {...hotelForm.register('hotel_name', { required: true })} placeholder="e.g. Hilton Makkah" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input label="Check In" type="date" {...hotelForm.register('check_in')} />
+                        <Input label="Check Out" type="date" {...hotelForm.register('check_out')} />
+                    </div>
+                    <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Room Count</p>
+                        <div className="grid grid-cols-4 gap-3">
+                            <Input label="DBL" type="number" min="0" {...hotelForm.register('room_dbl')} />
+                            <Input label="TRPL" type="number" min="0" {...hotelForm.register('room_trpl')} />
+                            <Input label="QUAD" type="number" min="0" {...hotelForm.register('room_quad')} />
+                            <Input label="QUINT" type="number" min="0" {...hotelForm.register('room_quint')} />
+                        </div>
+                    </div>
+                    <Input label="Reservation No." {...hotelForm.register('reservation_no')} placeholder="Optional" />
+                    <div className="flex gap-2 justify-end pt-1">
+                        <Button variant="secondary" type="button" onClick={() => setHotelModal(false)}>Cancel</Button>
+                        <Button type="submit" loading={hotelForm.formState.isSubmitting}>{editHotel ? 'Update' : 'Add'}</Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Train Modal */}
+            <Modal isOpen={trainModal} onClose={() => setTrainModal(false)} title={editTrain ? 'Edit Train Reservation' : 'Add Train Reservation'}>
+                <form onSubmit={trainForm.handleSubmit(submitTrain)} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>From Station</label>
+                            <select {...trainForm.register('from_station', { required: true })} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm bg-white"
+                                style={{ border: '1px solid var(--border)', outline: 'none' }}>
+                                <option value="">Select station</option>
+                                <option value="Makkah Station">Makkah Station</option>
+                                <option value="Madinah Station">Madinah Station</option>
+                                <option value="Jeddah Station">Jeddah Station</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>To Station</label>
+                            <select {...trainForm.register('to_station', { required: true })} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm bg-white"
+                                style={{ border: '1px solid var(--border)', outline: 'none' }}>
+                                <option value="">Select station</option>
+                                <option value="Makkah Station">Makkah Station</option>
+                                <option value="Madinah Station">Madinah Station</option>
+                                <option value="Jeddah Station">Jeddah Station</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <Input label="Train Date" type="date" {...trainForm.register('train_date')} />
+                        <Input label="Departure Time" type="time" {...trainForm.register('departure_time')} />
+                        <Input label="Total Hajj (pax)" type="number" min="0" {...trainForm.register('total_hajj')} />
+                    </div>
+                    <Input label="Remarks" {...trainForm.register('remarks')} placeholder="Optional" />
+                    <div className="flex gap-2 justify-end pt-1">
+                        <Button variant="secondary" type="button" onClick={() => setTrainModal(false)}>Cancel</Button>
+                        <Button type="submit" loading={trainForm.formState.isSubmitting}>{editTrain ? 'Update' : 'Add'}</Button>
+                    </div>
+                </form>
+            </Modal>
+
             <ConfirmDialog isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Confirm Delete"
                 message="This action cannot be undone." onConfirm={handleDelete} />
+
+            {/* Rawdah Modal */}
+            <Modal isOpen={rawdahModal} onClose={() => setRawdahModal(false)} title="Edit Rawdah Permits">
+                <form onSubmit={rawdahForm.handleSubmit(submitRawdah)} className="space-y-6">
+                    {/* Men */}
+                    <div className="space-y-3">
+                        <h4 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider flex justify-between border-b pb-2">
+                            <span>Men / Laki-laki</span>
+                        </h4>
+                        <div className="grid grid-cols-3 gap-4">
+                            <Input label="Date" type="date" {...rawdahForm.register('men_date')} />
+                            <Input label="Time" placeholder="e.g. 13:30-17:30" {...rawdahForm.register('men_time')} />
+                            <Input label="Total Pax" type="number" {...rawdahForm.register('men_pax')} />
+                        </div>
+                    </div>
+                    {/* Women */}
+                    <div className="space-y-3">
+                        <h4 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider flex justify-between border-b pb-2 mt-4">
+                            <span>Women / Perempuan</span>
+                        </h4>
+                        <div className="grid grid-cols-3 gap-4">
+                            <Input label="Date" type="date" {...rawdahForm.register('women_date')} />
+                            <Input label="Time" placeholder="e.g. 06:00-10:00" {...rawdahForm.register('women_time')} />
+                            <Input label="Total Pax" type="number" {...rawdahForm.register('women_pax')} />
+                        </div>
+                    </div>
+                    <div className="flex gap-2 justify-end pt-4">
+                        <Button variant="secondary" type="button" onClick={() => setRawdahModal(false)}>Cancel</Button>
+                        <Button type="submit" loading={rawdahForm.formState.isSubmitting}>Save</Button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     );
 };
+
+/* ── Hotel Tab ── */
+const HotelTab = ({ hotels, openModal, onDelete, formatDate }) => (
+    <div className="space-y-4">
+        <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Hotel Accommodation ({hotels.length})</h3>
+            <Button size="sm" icon={Plus} onClick={() => openModal()}>Add Hotel</Button>
+        </div>
+        {hotels.length === 0 ? (
+            <EmptyState title="No hotel added" description="Add hotel accommodation for this group." icon={Hotel} />
+        ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {hotels.map((h, i) => (
+                    <motion.div key={h.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                        <Card className="group">
+                            <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Badge variant="primary">{h.city}</Badge>
+                                        <span className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>{h.hotel_name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 mt-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                                        <span>Check-in: {formatDate(h.check_in)}</span>
+                                        <span>Check-out: {formatDate(h.check_out)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                        {h.room_dbl > 0 && <Badge variant="secondary">DBL: {h.room_dbl}</Badge>}
+                                        {h.room_trpl > 0 && <Badge variant="secondary">TRPL: {h.room_trpl}</Badge>}
+                                        {h.room_quad > 0 && <Badge variant="secondary">QUAD: {h.room_quad}</Badge>}
+                                        {h.room_quint > 0 && <Badge variant="secondary">QUINT: {h.room_quint}</Badge>}
+                                        {h.reservation_no && <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>Resv# {h.reservation_no}</span>}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={() => openModal(h)} className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                        <Pencil size={13} />
+                                    </button>
+                                    <button onClick={() => onDelete(h)} className="p-1.5 rounded-lg" style={{ color: 'var(--danger)' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                        <Trash2 size={13} />
+                                    </button>
+                                </div>
+                            </div>
+                        </Card>
+                    </motion.div>
+                ))}
+            </div>
+        )}
+    </div>
+);
+
+/* ── Train Tab ── */
+const TrainTab = ({ trains, openModal, onDelete, formatDate, formatTime }) => (
+    <div className="space-y-4">
+        <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Train Reservation ({trains.length})</h3>
+            <Button size="sm" icon={Plus} onClick={() => openModal()}>Add Train</Button>
+        </div>
+        {trains.length === 0 ? (
+            <EmptyState title="No train reservation" description="Add train reservations for this group." icon={Train} />
+        ) : (
+            <div className="space-y-2.5">
+                {trains.map((t, i) => (
+                    <motion.div key={t.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                        <Card className="group">
+                            <div className="flex items-center gap-4">
+                                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                                    style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
+                                    <Train size={16} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                            {t.from_station} → {t.to_station}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3 mt-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                                        {t.train_date && <span>{formatDate(t.train_date)}</span>}
+                                        {t.departure_time && <span>Depart {formatTime(t.departure_time)}</span>}
+                                        {t.total_hajj && <span>· {t.total_hajj} pax</span>}
+                                        {t.remarks && <span>· {t.remarks}</span>}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={() => openModal(t)} className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                        <Pencil size={13} />
+                                    </button>
+                                    <button onClick={() => onDelete(t)} className="p-1.5 rounded-lg" style={{ color: 'var(--danger)' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                        <Trash2 size={13} />
+                                    </button>
+                                </div>
+                            </div>
+                        </Card>
+                    </motion.div>
+                ))}
+            </div>
+        )}
+    </div>
+);
 
 /* ── Overview Tab ── */
 const OverviewTab = ({ group, formatDate }) => {
@@ -413,7 +802,7 @@ const OverviewTab = ({ group, formatDate }) => {
 };
 
 /* ── Flights Tab ── */
-const FlightsTab = ({ segments, flights, openModal, onDelete, formatDate, formatTime }) => (
+const FlightsTab = ({ segments, openModal, onDelete, formatDate, formatTime }) => (
     <div className="space-y-4">
         <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Flight Itinerary ({segments.length} segments)</h3>
@@ -521,7 +910,7 @@ const TeamTab = ({ tourLeaders, muthawifs, allTourLeaders, allMuthawifs, onAssig
     const availableTl = allTourLeaders.filter(t => !assignedTlIds.has(t.id));
     const availableMt = allMuthawifs.filter(m => !assignedMtIds.has(m.id));
 
-    const StaffCard = ({ person, role, onRemove }) => (
+    const StaffCard = ({ person, onRemove }) => (
         <div className="flex items-center justify-between p-3 rounded-xl bg-white" style={{ border: '1px solid var(--border-light)' }}>
             <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold"
@@ -584,10 +973,68 @@ const TeamTab = ({ tourLeaders, muthawifs, allTourLeaders, allMuthawifs, onAssig
     );
 };
 
-/* ── Documents Tab (Placeholder) ── */
-const DocumentsTab = () => (
-    <EmptyState title="Documents" description="Document management will be available in a future release." icon={FileText} />
-);
+/* ── Documents Tab ── */
+const DocumentsTab = ({ groupId }) => {
+    const printUrl = `/groups/${groupId}/print`;
+    const embedUrl = `/groups/${groupId}/print?embed=true`;
+    const handlePrint = () => {
+        const iframe = document.getElementById('group-print-iframe');
+        if (iframe) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        } else {
+            window.open(printUrl, '_blank');
+        }
+    };
+
+    return (
+        <div className="space-y-3">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Group Itinerary Document</h3>
+                    <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>Preview dan cetak dokumen itinerary grup</p>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handlePrint}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
+                        style={{ background: '#f5c400', color: '#000', border: 'none', cursor: 'pointer' }}
+                    >
+                        <Printer size={13} />
+                        Print / Save PDF
+                    </button>
+                    <a
+                        href={printUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
+                        style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid var(--border)', textDecoration: 'none' }}
+                    >
+                        <Eye size={13} />
+                        Open in New Tab
+                    </a>
+                </div>
+            </div>
+
+            {/* iframe Preview — embed mode hides toolbar */}
+            <div style={{
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                overflow: 'hidden',
+                background: '#e5e7eb',
+                height: '75vh',
+            }}>
+                <iframe
+                    id="group-print-iframe"
+                    src={embedUrl}
+                    title="Group Itinerary Preview"
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                />
+            </div>
+        </div>
+    );
+};
 
 /* ── Notes Tab ── */
 const NotesTab = ({ notes, editing, setEditing, value, onChange, onSave }) => (
@@ -614,5 +1061,48 @@ const NotesTab = ({ notes, editing, setEditing, value, onChange, onSave }) => (
         )}
     </Card>
 );
+
+/* ── Rawdah Tab ── */
+const RawdahTab = ({ data, openModal, formatDate }) => {
+    return (
+        <div className="space-y-4">
+            <div className="flex justify-between items-center bg-slate-800 text-white px-4 py-2.5 rounded-xl shadow-sm">
+                <h3 className="text-sm font-semibold tracking-wider flex items-center gap-2">
+                    <BookOpen size={16} className="text-amber-400" /> FOR RAWDAH  PERMITS
+                </h3>
+                <Button size="sm" onClick={() => openModal()} style={{ background: 'white', color: '#1E293B', border: 'none' }}>
+                    Edit Permits
+                </Button>
+            </div>
+
+            <Card padding={false} className="overflow-hidden">
+                <table className="w-full text-sm">
+                    <thead className="bg-[#fcb900] text-black uppercase text-xs font-bold">
+                        <tr>
+                            <th className="px-6 py-3 text-center w-1/4 border-b border-black/10"></th>
+                            <th className="px-6 py-3 text-center w-1/4 border-b border-black/10" style={{ borderLeft: '1px solid rgba(0,0,0,0.1)' }}>Date</th>
+                            <th className="px-6 py-3 text-center w-1/4 border-b border-black/10" style={{ borderLeft: '1px solid rgba(0,0,0,0.1)' }}>Time</th>
+                            <th className="px-6 py-3 text-center w-1/4 border-b border-black/10" style={{ borderLeft: '1px solid rgba(0,0,0,0.1)' }}>Total Pax</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        <tr className="hover:bg-slate-50 transition-colors">
+                            <td className="px-6 py-4 font-bold text-center text-slate-800 border-r border-slate-100">MEN</td>
+                            <td className="px-6 py-4 font-bold text-center border-r border-slate-100">{data?.men_date ? formatDate(data.men_date) : '—'}</td>
+                            <td className="px-6 py-4 font-bold text-center border-r border-slate-100">{data?.men_time || '—'}</td>
+                            <td className="px-6 py-4 font-bold text-center">{data?.men_pax || '—'}</td>
+                        </tr>
+                        <tr className="hover:bg-slate-50 transition-colors">
+                            <td className="px-6 py-4 font-bold text-center text-slate-800 border-r border-slate-100">WOMEN</td>
+                            <td className="px-6 py-4 font-bold text-center border-r border-slate-100">{data?.women_date ? formatDate(data.women_date) : '—'}</td>
+                            <td className="px-6 py-4 font-bold text-center border-r border-slate-100">{data?.women_time || '—'}</td>
+                            <td className="px-6 py-4 font-bold text-center">{data?.women_pax || '—'}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </Card>
+        </div>
+    );
+};
 
 export default GroupDetail;

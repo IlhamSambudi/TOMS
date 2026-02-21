@@ -3,7 +3,11 @@ import pool from '../config/db.js';
 const GroupModel = {
     findAll: async () => {
         const result = await pool.query(`
-            SELECT g.*, h.name as handling_company_name 
+            SELECT g.*, h.name as handling_company_name,
+                   (SELECT STRING_AGG(DISTINCT tl.name, ', ')
+                    FROM group_assignments ga
+                    JOIN tour_leaders tl ON ga.tour_leader_id = tl.id
+                    WHERE ga.group_id = g.id AND ga.role = 'TOUR_LEADER') as tour_leaders
             FROM groups g 
             LEFT JOIN handling_companies h ON g.handling_company_id = h.id 
             ORDER BY g.created_at DESC
@@ -78,6 +82,16 @@ const GroupModel = {
     delete: async (id) => {
         await pool.query('DELETE FROM groups WHERE id = $1', [id]);
         return { message: 'Group deleted successfully' };
+    },
+
+    updateStatus: async (id, status) => {
+        const VALID = ['PREPARATION', 'DEPARTURE', 'ARRIVAL'];
+        if (!VALID.includes(status)) throw new Error('Invalid status value');
+        const result = await pool.query(
+            'UPDATE groups SET status = $1 WHERE id = $2 RETURNING *',
+            [status, id]
+        );
+        return result.rows[0];
     }
 };
 

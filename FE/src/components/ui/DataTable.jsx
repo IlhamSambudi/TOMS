@@ -37,13 +37,13 @@ const DataTable = ({
     }
 
     return (
-        <Card className="overflow-hidden" padding={true}>
+        <Card className="overflow-visible" padding={true}>
             {filters && (
                 <div className="mb-6">
                     {filters}
                 </div>
             )}
-            <div className="overflow-x-auto -mx-5 bg-white rounded-lg border-t border-slate-100/50"> {/* Added slight separation if needed, or kept clean */}
+            <div className="overflow-visible pb-24 -mx-5 bg-white rounded-lg border-t border-slate-100/50"> {/* overflow-visible prevents clipping dropdowns, pb-24 gives space */}
                 <table className="data-table w-full">
                     <thead>
                         <tr style={{ borderBottom: '1px solid var(--border-light)' }}>

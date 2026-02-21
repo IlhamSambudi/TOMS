@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Calendar, Bus } from 'lucide-react';
+import { Search, MapPin, Calendar, Bus, Plus, Edit, Trash2 } from 'lucide-react';
 import PageHeader from '../components/ui/PageHeader';
 import Input from '../components/ui/Input';
 import DataTable from '../components/ui/DataTable';
-import transportService from '../services/transportService';
-import statusBadge from '../components/ui/StatusBadge';
-import toast from 'react-hot-toast';
-
-import { Plus, Edit, Trash2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import TransportModal from '../components/resources/TransportModal';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
+import transportService from '../services/transportService';
+import toast from 'react-hot-toast';
 
 const Transport = () => {
     const [data, setData] = useState([]);
-    const [loading, setLoading] = useState(true);
+    // const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -22,16 +19,15 @@ const Transport = () => {
     const [editingTransport, setEditingTransport] = useState(null);
 
     const fetchData = async () => {
-        setLoading(true);
+        // setLoading(true);
         try {
             const result = await transportService.getAll();
             // Handle both array and {success, message, data} response formats
             setData(Array.isArray(result) ? result : (result?.data || []));
-        } catch (error) {
-            console.error(error);
+        } catch {
             toast.error('Failed to load transports');
         } finally {
-            setLoading(false);
+            // setLoading(false);
         }
     };
 
@@ -61,7 +57,7 @@ const Transport = () => {
             await transportService.delete(selectedId);
             toast.success('Transport deleted successfully');
             fetchData();
-        } catch (error) {
+        } catch {
             toast.error('Failed to delete transport');
         } finally {
             setIsDeleteDialogOpen(false);

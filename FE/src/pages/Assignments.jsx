@@ -7,7 +7,7 @@ import Input from '../components/ui/Input';
 import DataTable from '../components/ui/DataTable';
 import Button from '../components/ui/Button';
 import AssignmentModal from '../components/resources/AssignmentModal';
-import groupService from '../services/groupService'; // Assuming I can get groups with assignments
+import assignmentService from '../services/assignmentService';
 import toast from 'react-hot-toast';
 
 const Assignments = () => {
@@ -19,8 +19,7 @@ const Assignments = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch groups to show their assignments
-            const result = await groupService.getAll();
+            const result = await assignmentService.getAll();
             setData(result);
         } catch (error) {
             console.error(error);
@@ -35,8 +34,10 @@ const Assignments = () => {
     }, []);
 
     const filteredData = data.filter(item =>
-        item.group_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.program_type.toLowerCase().includes(searchQuery.toLowerCase())
+        item.group_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.program_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.tour_leaders?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.muthawifs?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const handleAdd = () => {
@@ -60,16 +61,21 @@ const Assignments = () => {
                     { key: 'program_type', label: 'Program' },
                     { key: 'departure_date', label: 'Departure', render: (row) => row.departure_date ? new Date(row.departure_date).toLocaleDateString() : '-' },
                     {
-                        key: 'status',
-                        label: 'Assignment Status',
-                        render: () => <span className="text-xs text-slate-400 italic">Check Detail</span>
+                        key: 'tour_leaders',
+                        label: 'Tour Leader',
+                        render: (row) => <span className="text-sm">{row.tour_leaders || '-'}</span>
+                    },
+                    {
+                        key: 'muthawifs',
+                        label: 'Muthawif',
+                        render: (row) => <span className="text-sm">{row.muthawifs || '-'}</span>
                     }
                 ]}
                 data={filteredData}
                 onRowClick={(row) => window.location.href = `/groups/${row.id}`}
                 filters={
                     <Input
-                        placeholder="Search groups..."
+                        placeholder="Search assignments..."
                         icon={Search}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}

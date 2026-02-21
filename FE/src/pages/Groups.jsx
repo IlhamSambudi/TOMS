@@ -91,6 +91,16 @@ const Groups = () => {
         }
     };
 
+    const handleStatusChange = async (groupId, newStatus) => {
+        try {
+            await groupService.updateStatus(groupId, newStatus);
+            toast.success('Status updated');
+            fetchData();
+        } catch (e) {
+            toast.error(e.message || 'Failed to update status');
+        }
+    };
+
     const openEdit = (group) => {
         setEditGroup(group);
         reset({
@@ -117,10 +127,11 @@ const Groups = () => {
 
     const filtered = groups.filter(g => {
         const q = search.toLowerCase();
-        const matchSearch = g.group_code?.toLowerCase().includes(q) ||
-            g.program_type?.toLowerCase().includes(q) ||
-            g.handling_company_name?.toLowerCase().includes(q);
-        const matchStatus = statusFilter === 'all' || StatusBadge.fromGroup(g) === statusFilter;
+        const matchSearch = (g.group_code?.toLowerCase() || '').includes(q) ||
+            (g.program_type?.toLowerCase() || '').includes(q) ||
+            (g.tour_leaders?.toLowerCase() || '').includes(q) ||
+            (g.handling_company_name?.toLowerCase() || '').includes(q);
+        const matchStatus = statusFilter === 'all' || (g.status || 'PREPARATION') === statusFilter;
         const matchHandling = handlingFilter === 'all' || g.handling_company_id?.toString() === handlingFilter;
         return matchSearch && matchStatus && matchHandling;
     });
@@ -135,20 +146,21 @@ const Groups = () => {
             render: (row) => <Badge variant="primary">{row.program_type}</Badge>,
         },
         {
-            key: 'departure_date', label: 'Departure',
-            render: (row) => <span style={{ color: 'var(--text-secondary)' }}>{formatDate(row.departure_date)}</span>,
-        },
-        {
             key: 'total_pax', label: 'Pax',
             render: (row) => <span style={{ color: 'var(--text-secondary)' }}>{row.total_pax}</span>,
         },
         {
-            key: 'handling', label: 'Handling',
-            render: (row) => <span style={{ color: 'var(--text-muted)' }}>{row.handling_company_name || '—'}</span>,
+            key: 'tour_leader', label: 'Tour Leader',
+            render: (row) => <span style={{ color: 'var(--text-muted)' }}>{row.tour_leaders || '—'}</span>,
         },
         {
             key: 'status', label: 'Status',
-            render: (row) => <StatusBadge status={StatusBadge.fromGroup(row)} />,
+            render: (row) => (
+                <StatusBadge
+                    status={row.status || 'PREPARATION'}
+                    onChange={(newStatus) => handleStatusChange(row.id, newStatus)}
+                />
+            ),
         },
         {
             key: 'actions', label: '', headerClassName: 'w-10',
@@ -204,10 +216,9 @@ const Groups = () => {
                             style={{ border: 'none' }}
                         >
                             <option value="all">All Status</option>
-                            <option value="upcoming">Upcoming</option>
-                            <option value="in-saudi">In Saudi</option>
-                            <option value="active">Active</option>
-                            <option value="completed">Completed</option>
+                            <option value="PREPARATION">Preparation</option>
+                            <option value="DEPARTURE">Departure</option>
+                            <option value="ARRIVAL">Arrival</option>
                         </select>
 
                         {handling.length > 0 && (

@@ -65,38 +65,32 @@ const GroupController = {
         }
     },
 
-    // GET /groups/operations-summary — categorized groups for dashboard
+    // GET /groups/operations-summary
     getOperationsSummary: async (req, res) => {
         try {
             const groups = await GroupModel.findAll();
-            const now = new Date();
-
-            const categorize = (g) => {
-                if (!g.departure_date) return 'draft';
-                const dep = new Date(g.departure_date);
-                const diffDays = Math.ceil((dep - now) / (1000 * 60 * 60 * 24));
-                if (diffDays < 0 && diffDays > -30) return 'in_saudi';
-                if (diffDays <= 0) return 'completed';
-                if (diffDays <= 7) return 'upcoming';
-                return 'awaiting';
-            };
-
             const summary = {
-                upcoming: [],
-                in_saudi: [],
-                awaiting: [],
+                upcoming: groups.filter(g => g.status === 'PREPARATION'),
+                in_saudi: groups.filter(g => g.status === 'DEPARTURE'),
+                awaiting: groups.filter(g => g.status === 'ARRIVAL'),
                 recent: [...groups].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 8),
                 total: groups.length,
             };
-
-            groups.forEach(g => {
-                const cat = categorize(g);
-                if (summary[cat]) summary[cat].push(g);
-            });
-
             res.json({ success: true, message: 'Operations summary', data: summary });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message, data: null });
+        }
+    },
+
+    // PATCH /groups/:id/status
+    patchStatus: async (req, res) => {
+        try {
+            const { status } = req.body;
+            const group = await GroupModel.updateStatus(req.params.id, status);
+            if (!group) return res.status(404).json({ success: false, message: 'Group not found', data: null });
+            res.json({ success: true, message: 'Status updated', data: group });
+        } catch (error) {
+            res.status(400).json({ success: false, message: error.message, data: null });
         }
     }
 };
