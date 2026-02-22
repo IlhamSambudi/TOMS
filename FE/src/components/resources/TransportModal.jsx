@@ -24,6 +24,7 @@ const DROP_LOCATIONS = [
     'City Tour Makkah',
     'City Tour Madinah',
     'City Tour Thaif',
+    'Rawdah',
 ];
 
 const SelectField = ({ label, name, value, onChange, options, placeholder, error, required }) => (

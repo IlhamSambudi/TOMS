@@ -5,17 +5,17 @@ import Layout from './layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Groups from './pages/Groups';
 import GroupDetail from './pages/GroupDetail';
-import Flights from './pages/Flights';
-import Transport from './pages/Transport';
-import Assignments from './pages/Assignments';
+import Flights from './pages/master-data/Flights';
+import Transport from './pages/operations/Transport';
+import Assignments from './pages/operations/Assignments';
 import Reports from './pages/Reports';
-import HandlingCompanies from './pages/resources/HandlingCompanies';
-import Muthawifs from './pages/resources/Muthawifs';
-import TourLeaders from './pages/resources/TourLeaders';
+import HandlingCompanies from './pages/master-data/HandlingCompanies';
+import Muthawifs from './pages/master-data/Muthawifs';
+import TourLeaders from './pages/master-data/TourLeaders';
 import GroupPrintView from './pages/GroupPrintView';
-import Hotels from './pages/Hotels';
-import Trains from './pages/Trains';
-import Rawdahs from './pages/Rawdahs';
+import Hotels from './pages/operations/Hotels';
+import Trains from './pages/operations/Trains';
+import Rawdahs from './pages/operations/Rawdahs';
 
 function App() {
   return (

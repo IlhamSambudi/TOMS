@@ -1,5 +1,41 @@
 @import "tailwindcss";
 
+/* ── Typography Definitions ── */
+/* 
+   We define a custom font family just for numbers. 
+   These URLs point to the direct Google Fonts WOFF2 files for Roboto 400, 500, and 700.
+   The `unicode-range` ensures this font ONLY applies to digits 0-9.
+*/
+@font-face {
+  font-family: 'Roboto Numbers';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: normal;
+  src: url(https://fonts.gstatic.com/l/font?kit=KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbWmTmgXup24V61oA5ENO&skey=a0a0114a1dcab3ac&v=v51) format('truetype');
+  unicode-range: U+30-39;
+}
+@font-face {
+  font-family: 'Roboto Numbers';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: normal;
+  src: url(https://fonts.gstatic.com/l/font?kit=KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWub2bWmTmgXup24V61oA5ENO&skey=a0a0114a1dcab3ac&v=v51) format('truetype');
+  unicode-range: U+30-39;
+}
+@font-face {
+  font-family: 'Roboto Numbers';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: normal;
+  src: url(https://fonts.gstatic.com/l/font?kit=KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWuYjammTmgXup24V61oA5ENO&skey=a0a0114a1dcab3ac&v=v51) format('truetype');
+  unicode-range: U+30-39;
+}
+
+body {
+    font-family: 'Roboto Numbers', 'Montserrat', sans-serif !important;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
 /* ── Strict Design System Tokens & Utilities ── */
 :root {
     /* ── Colors ── */

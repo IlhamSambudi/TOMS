@@ -3,8 +3,8 @@ import { clsx } from 'clsx';
 
 const Card = ({ children, className, onClick, padding = true, ...props }) => (
     <div
-        className={clsx('bg-white rounded-[14px]', padding && 'p-[24px]', onClick && 'cursor-pointer hover:shadow-md transition-shadow', className)}
-        style={{ border: '1px solid var(--border)', boxShadow: 'var(--shadow-light)' }}
+        className={clsx('bg-white rounded-2xl', padding && 'p-[24px]', onClick && 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300', className)}
+        style={{ border: '1px solid var(--border)', boxShadow: '0 4px 20px -2px rgba(0,0,0,0.04)' }}
         onClick={onClick}
         {...props}
     >

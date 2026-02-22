@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, UserCheck, Users, Plus } from 'lucide-react';
-import PageHeader from '../components/ui/PageHeader';
-import Input from '../components/ui/Input';
-import DataTable from '../components/ui/DataTable';
-import Button from '../components/ui/Button';
-import AssignmentModal from '../components/resources/AssignmentModal';
-import assignmentService from '../services/assignmentService';
+import PageHeader from '../../components/ui/PageHeader';
+import Input from '../../components/ui/Input';
+import DataTable from '../../components/ui/DataTable';
+import Button from '../../components/ui/Button';
+import AssignmentModal from '../../components/resources/AssignmentModal';
+import assignmentService from '../../services/assignmentService';
 import toast from 'react-hot-toast';
 
 const Assignments = () => {

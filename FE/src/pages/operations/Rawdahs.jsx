@@ -3,14 +3,15 @@ import { BookOpen, Search, Plus } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
-import PageHeader from '../components/ui/PageHeader';
-import DataTable from '../components/ui/DataTable';
-import EmptyState from '../components/ui/EmptyState';
-import Modal from '../components/ui/Modal';
-import Input from '../components/ui/Input';
+import PageHeader from '../../components/ui/PageHeader';
+import DataTable from '../../components/ui/DataTable';
+import EmptyState from '../../components/ui/EmptyState';
+import Modal from '../../components/ui/Modal';
+import Input from '../../components/ui/Input';
+import Button from '../../components/ui/Button';
 
-import rawdahService from '../services/rawdahService';
-import groupService from '../services/groupService';
+import rawdahService from '../../services/rawdahService';
+import groupService from '../../services/groupService';
 
 const Rawdahs = () => {
     const [rawdahs, setRawdahs] = useState([]);
@@ -115,48 +116,32 @@ const Rawdahs = () => {
     ];
 
     return (
-        <div className="p-6 md:p-8 max-w-content mx-auto space-y-8">
+        <div className="space-y-6">
             <PageHeader
                 title="Rawdah Permits"
                 subtitle="Manage and view Rawdah schedules across all groups"
-                icon={BookOpen}
+            >
+                <Button icon={Plus} onClick={() => { reset(); setIsModalOpen(true); }}>
+                    Add Rawdah Permits
+                </Button>
+            </PageHeader>
+
+            <DataTable
+                columns={columns}
+                data={filteredRawdahs}
+                filters={
+                    <div className="flex items-center gap-3">
+                        <Input
+                            placeholder="Search groups..."
+                            icon={Search}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-[300px]"
+                        />
+                    </div>
+                }
+                emptyState="There are currently no rawdah allocations matching your search."
             />
-
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="relative w-full md:w-80">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input
-                        type="text"
-                        placeholder="Search groups..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-[13px] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 transition-all"
-                    />
-                </div>
-                <button
-                    onClick={() => { reset(); setIsModalOpen(true); }}
-                    className="flex items-center justify-center w-full md:w-auto gap-2 bg-[#0F766E] text-white px-5 py-2.5 rounded-xl font-medium text-[13px] hover:bg-[#0d635c] transition-all"
-                >
-                    <Plus size={18} />
-                    <span>New Permits</span>
-                </button>
-            </div>
-
-            {loading ? (
-                <div className="space-y-4">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="h-20 bg-slate-100 rounded-xl animate-pulse" />
-                    ))}
-                </div>
-            ) : filteredRawdahs.length > 0 ? (
-                <DataTable columns={columns} data={filteredRawdahs} />
-            ) : (
-                <EmptyState
-                    icon={BookOpen}
-                    title="No Rawdah permits found"
-                    message="There are currently no rawdah allocations matching your search."
-                />
-            )}
 
             {/* Modal */}
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Rawdah Permits">

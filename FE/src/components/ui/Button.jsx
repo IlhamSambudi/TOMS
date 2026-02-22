@@ -3,26 +3,10 @@ import { clsx } from 'clsx';
 import { Loader2 } from 'lucide-react';
 
 const variants = {
-    primary: {
-        background: 'var(--primary)',
-        color: '#ffffff',
-        border: '1px solid transparent',
-    },
-    secondary: {
-        background: '#ffffff',
-        color: 'var(--text-secondary)',
-        border: '1px solid var(--border)',
-    },
-    ghost: {
-        background: 'transparent',
-        color: 'var(--text-secondary)',
-        border: 'none',
-    },
-    danger: {
-        background: '#FEF2F2',
-        color: '#EF4444',
-        border: '1px solid #FECACA',
-    },
+    primary: 'bg-teal-700 text-white border border-transparent hover:bg-teal-800 shadow-sm hover:shadow active:scale-[0.98]',
+    secondary: 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-sm hover:shadow active:scale-[0.98]',
+    ghost: 'bg-transparent text-slate-600 border-none hover:bg-slate-50 active:scale-[0.98]',
+    danger: 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 shadow-sm hover:shadow active:scale-[0.98]',
 };
 
 const sizes = {
@@ -32,28 +16,24 @@ const sizes = {
 };
 
 const Button = ({ children, variant = 'primary', size = 'md', icon: Icon, loading, className, ...props }) => {
-    const v = variants[variant] || variants.primary;
+    const vClass = variants[variant] || variants.primary;
 
     return (
         <button
             className={clsx(
-                'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm',
-                // Strict Design System Sizes
-                size === 'sm' && 'h-[36px] px-4 text-[13px] gap-1.5 rounded-[10px]',
-                size === 'md' && 'h-[44px] px-5 text-[14px] gap-2 rounded-[12px] font-semibold',
-                size === 'lg' && 'h-[52px] px-6 text-[16px] gap-2.5 rounded-[14px]',
-                size === 'icon' && 'h-[44px] w-[44px] p-0 rounded-[12px]',
+                'inline-flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed',
+                // Exact styling mimicking the user's reference image
+                size === 'sm' && 'h-[32px] px-3 text-[13px] gap-1.5 rounded-[10px] font-medium',
+                size === 'md' && 'h-[40px] px-4 text-[14px] gap-2 rounded-[12px] font-semibold',
+                size === 'lg' && 'h-[48px] px-6 text-[15px] gap-2 rounded-[14px] font-semibold',
+                size === 'icon' && 'h-[40px] w-[40px] p-0 rounded-[12px]',
+                vClass,
                 className,
             )}
-            style={{
-                background: v.background,
-                color: v.color,
-                border: v.border,
-            }}
             disabled={loading || props.disabled}
             {...props}
         >
-            {loading ? <Loader2 size={14} className="animate-spin" /> : Icon && <Icon size={14} />}
+            {loading ? <Loader2 size={16} className="animate-spin" /> : Icon && <Icon size={16} className={variant === 'secondary' ? 'text-slate-400' : ''} />}
             {children}
         </button>
     );

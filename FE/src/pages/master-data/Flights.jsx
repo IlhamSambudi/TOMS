@@ -4,15 +4,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, Search, Plane } from 'lucide-react';
-import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
-import DataTable from '../components/ui/DataTable';
-import PageHeader from '../components/ui/PageHeader';
-import EmptyState from '../components/ui/EmptyState';
-import Skeleton from '../components/ui/Skeleton';
-import ConfirmDialog from '../components/ui/ConfirmDialog';
-import Modal from '../components/Modal';
-import flightService from '../services/flightService';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import DataTable from '../../components/ui/DataTable';
+import PageHeader from '../../components/ui/PageHeader';
+import EmptyState from '../../components/ui/EmptyState';
+import Skeleton from '../../components/ui/Skeleton';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import Modal from '../../components/Modal';
+import flightService from '../../services/flightService';
 
 const schema = z.object({
     airline: z.string().min(1, 'Required'),
@@ -27,6 +27,7 @@ const Flights = () => {
     const [flights, setFlights] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [selectedAirlineFilter, setSelectedAirlineFilter] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [editFlight, setEditFlight] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
@@ -81,9 +82,13 @@ const Flights = () => {
 
     const filtered = flights.filter(f => {
         const q = search.toLowerCase();
-        return f.airline?.toLowerCase().includes(q) || f.flight_number?.toLowerCase().includes(q) ||
+        const matchesSearch = f.airline?.toLowerCase().includes(q) || f.flight_number?.toLowerCase().includes(q) ||
             f.origin?.toLowerCase().includes(q) || f.destination?.toLowerCase().includes(q);
+        const matchesAirline = selectedAirlineFilter ? f.airline === selectedAirlineFilter : true;
+        return matchesSearch && matchesAirline;
     });
+
+    const airlineOptions = Array.from(new Set(flights.map(f => f.airline))).filter(Boolean);
 
     const columns = [
         { key: 'airline', label: 'Airline', render: r => <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{r.airline}</span> },
@@ -109,6 +114,31 @@ const Flights = () => {
             <PageHeader title="Flights" subtitle={`${flights.length} flight templates`}>
                 <Button icon={Plus} onClick={openCreate}>Add Flight</Button>
             </PageHeader>
+
+            {airlineOptions.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+                    {airlineOptions.map(airline => {
+                        const count = flights.filter(f => f.airline === airline).length;
+                        const isSelected = selectedAirlineFilter === airline;
+                        return (
+                            <button
+                                key={airline}
+                                type="button"
+                                onClick={() => setSelectedAirlineFilter(isSelected ? null : airline)}
+                                className="flex flex-col items-center justify-center p-3 rounded-[14px] border text-center transition-all hover:-translate-y-0.5 hover:shadow-sm"
+                                style={{
+                                    borderColor: isSelected ? 'var(--accent)' : 'var(--border)',
+                                    background: isSelected ? 'var(--accent-light)' : 'var(--bg-card)',
+                                }}
+                            >
+                                <Plane size={20} className="mb-1" style={{ color: isSelected ? 'var(--accent)' : 'var(--text-muted)' }} />
+                                <span className="font-semibold text-xs leading-tight" style={{ color: isSelected ? 'var(--accent)' : 'var(--text-primary)' }}>{airline}</span>
+                                <span className="text-[10px] mt-0.5" style={{ color: isSelected ? 'var(--accent)' : 'var(--text-muted)' }}>{count} templates</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
 
             <DataTable
                 columns={columns}

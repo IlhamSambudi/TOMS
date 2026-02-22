@@ -28,7 +28,10 @@ const fmtTime = (t) => {
 const fmtFullDate = (d) => {
     if (!d) return '';
     const date = new Date(d);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric' });
+    const day = String(date.getDate()).padStart(2, '0');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${day}-${months[date.getMonth()]}-${date.getFullYear()}`;
 };
 
 /* ─────────────────────────────────────────────
@@ -389,7 +392,7 @@ const GroupPrintView = () => {
                 <table>
                     <thead>
                         <tr>
-                            <td colSpan={8} className="section-header">HOTEL ACCOMMODATION</td>
+                            <td colSpan={9} className="section-header">HOTEL ACCOMMODATION</td>
                         </tr>
                         <tr>
                             <th rowSpan={2}>CITY</th>

@@ -10,7 +10,8 @@ const GroupForm = ({ onSuccess, onCancel, initialData }) => {
         departure_date: '',
         total_pax: '',
         notes: '',
-        handling_company_id: ''
+        handling_company_id: '',
+        muasasah: ''
     });
     const [loading, setLoading] = useState(false);
     const [handlingCompanies, setHandlingCompanies] = useState([]);
@@ -130,6 +131,20 @@ const GroupForm = ({ onSuccess, onCancel, initialData }) => {
                         {handlingCompanies.map(c => (
                             <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Muasasah</label>
+                    <select
+                        name="muasasah"
+                        value={formData.muasasah}
+                        onChange={handleChange}
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    >
+                        <option value="">Select muasasah</option>
+                        <option value="MAAD">MAAD</option>
+                        <option value="GHANIYA">GHANIYA</option>
+                        <option value="ARABCO">ARABCO</option>
                     </select>
                 </div>
             </div>

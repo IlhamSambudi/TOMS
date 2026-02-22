@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Calendar, Bus, Plus, Edit, Trash2 } from 'lucide-react';
-import PageHeader from '../components/ui/PageHeader';
-import Input from '../components/ui/Input';
-import DataTable from '../components/ui/DataTable';
-import Button from '../components/ui/Button';
-import TransportModal from '../components/resources/TransportModal';
-import ConfirmDialog from '../components/ui/ConfirmDialog';
-import transportService from '../services/transportService';
+import { Search, MapPin, Calendar, Clock, Bus, Plus, Edit, Trash2 } from 'lucide-react';
+import PageHeader from '../../components/ui/PageHeader';
+import Input from '../../components/ui/Input';
+import DataTable from '../../components/ui/DataTable';
+import Button from '../../components/ui/Button';
+import TransportModal from '../../components/resources/TransportModal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import transportService from '../../services/transportService';
 import toast from 'react-hot-toast';
 
 const Transport = () => {
@@ -97,17 +97,23 @@ const Transport = () => {
         },
         {
             key: 'date',
-            label: 'Journey Date',
+            label: 'Journey Date & Time',
             render: (row) => (
-                <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                    <Calendar size={12} className="text-slate-400" />
-                    {row.journey_date ? new Date(row.journey_date).toLocaleString('en-GB', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }) : '-'}
+                <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                        <Calendar size={12} className="text-slate-400" />
+                        {row.journey_date ? new Date(row.journey_date).toLocaleString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                        }) : '-'}
+                    </div>
+                    {row.departure_time && (
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                            <Clock size={11} className="text-slate-400" />
+                            {row.departure_time}
+                        </div>
+                    )}
                 </div>
             )
         },

@@ -24,13 +24,13 @@ const navSections = [
     {
         title: 'MAIN',
         items: [
-            { path: '/', label: 'Dashboard', icon: LayoutDashboard }
+            { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+            { path: '/groups', label: 'Groups', icon: Users },
         ]
     },
     {
         title: 'OPERATIONS',
         items: [
-            { path: '/groups', label: 'Groups', icon: Users },
             { path: '/transport', label: 'Transport', icon: Bus },
             { path: '/hotels', label: 'Hotels', icon: Hotel },
             { path: '/trains', label: 'Trains', icon: Train },
@@ -46,20 +46,14 @@ const navSections = [
             { path: '/tour-leaders', label: 'Tour Leaders', icon: Briefcase },
             { path: '/handling-companies', label: 'Handling Companies', icon: Building2 }
         ]
-    },
-    {
-        title: 'REPORTS',
-        items: [
-            { path: '/reports', label: 'Reports', icon: FileText }
-        ]
     }
 ];
 
 const Layout = () => {
     const location = useLocation();
-    // Only strictly needed state is for Mobile Menu toggle
     const [mobileOpen, setMobileOpen] = useState(false);
 
+    // Check if a path is active
     const isActive = (path) => {
         if (path === '/') return location.pathname === '/';
         return location.pathname.startsWith(path);
@@ -95,7 +89,7 @@ const Layout = () => {
                 {/* 1. Sidebar Header */}
                 <div className="h-navbar flex items-center px-[20px] md:px-[20px] xl:px-[20px] md:justify-center xl:justify-start border-b border-transparent">
                     <div className="flex items-center gap-3">
-                        <div className="size-[32px] bg-[#0F766E] rounded-[8px] flex items-center justify-center text-white shadow-sm shrink-0">
+                        <div className="size-[32px] bg-[#0F766E] rounded-xl flex items-center justify-center text-white shadow-sm shrink-0">
                             <Building2 size={18} strokeWidth={2.5} />
                         </div>
                         {/* Hide text on tablet, show on desktop/mobile */}
@@ -127,7 +121,7 @@ const Layout = () => {
                                             to={item.path}
                                             onClick={() => setMobileOpen(false)}
                                             className={clsx(
-                                                "group flex items-center h-[40px] px-3 gap-3 rounded-[10px] transition-all duration-200",
+                                                "group flex items-center h-[40px] px-3 gap-3 rounded-[12px] transition-all duration-200",
                                                 // Active State
                                                 active
                                                     ? "bg-teal-50 text-teal-700 font-semibold"
@@ -158,7 +152,7 @@ const Layout = () => {
 
                 {/* 3. User Profile Footer */}
                 <div className="p-4 border-t border-slate-200">
-                    <div className="flex items-center gap-3 p-2 rounded-[10px] hover:bg-slate-50 cursor-pointer transition-colors md:justify-center xl:justify-start">
+                    <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors md:justify-center xl:justify-start">
                         <div className="size-[36px] rounded-full bg-slate-100 shrink-0 border border-slate-200 overflow-hidden">
                             <img
                                 src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin"
@@ -202,7 +196,7 @@ const Layout = () => {
 
                             {/* Breadcrumb / Title */}
                             <div className="hidden md:flex items-center text-[14px] font-medium text-slate-500">
-                                Start <span className="mx-2 text-slate-300">/</span>
+                                TOMS <span className="mx-2 text-slate-300">/</span>
                                 <span className="text-slate-900">
                                     {location.pathname === '/' ? 'Dashboard' :
                                         location.pathname.slice(1).charAt(0).toUpperCase() + location.pathname.slice(2)}
@@ -217,11 +211,11 @@ const Layout = () => {
                                 <input
                                     type="text"
                                     placeholder="Search..."
-                                    className="h-[36px] w-[240px] pl-[36px] pr-4 bg-slate-50 border-none rounded-[8px] text-[13px] text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-all"
+                                    className="h-[36px] w-[240px] pl-[36px] pr-4 bg-slate-50 border-none rounded-full text-[13px] text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-all"
                                 />
                             </div>
                             <div className="h-6 w-[1px] bg-slate-200 mx-2 hidden sm:block" />
-                            <button className="relative p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-[8px] transition-all">
+                            <button className="relative p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-all">
                                 <Bell size={18} />
                                 <span className="absolute top-2 right-2 size-1.5 bg-red-500 rounded-full ring-2 ring-white" />
                             </button>

@@ -3,15 +3,15 @@ import { Search, Calendar, Clock, Users } from 'lucide-react';
 import { Plus, Edit, Trash2, Train } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import PageHeader from '../components/ui/PageHeader';
-import Input from '../components/ui/Input';
-import DataTable from '../components/ui/DataTable';
-import Button from '../components/ui/Button';
-import Modal from '../components/Modal';
-import ConfirmDialog from '../components/ui/ConfirmDialog';
-import Badge from '../components/ui/Badge';
-import trainService from '../services/trainService';
-import groupService from '../services/groupService';
+import PageHeader from '../../components/ui/PageHeader';
+import Input from '../../components/ui/Input';
+import DataTable from '../../components/ui/DataTable';
+import Button from '../../components/ui/Button';
+import Modal from '../../components/Modal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import Badge from '../../components/ui/Badge';
+import trainService from '../../services/trainService';
+import groupService from '../../services/groupService';
 
 const selectStyle = {
     width: '100%', padding: '8px 12px', borderRadius: '10px', fontSize: '14px',

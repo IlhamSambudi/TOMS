@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import Card from './Card';
 
 const DataTable = ({
@@ -15,12 +15,32 @@ const DataTable = ({
     filters, // New prop for unified layout
 }) => {
     const [openMenu, setOpenMenu] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    // Reset page when data or items per page changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [data.length, itemsPerPage]);
+
+    const totalEntries = data.length;
+    const totalPages = itemsPerPage === 'All' ? 1 : Math.ceil(totalEntries / itemsPerPage);
+
+    const handlePageChange = (page) => {
+        if (typeof page === 'number' && page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
+
+    const paginatedData = itemsPerPage === 'All'
+        ? data
+        : data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const toggleAll = () => {
-        if (selectedIds.length === data.length) {
+        if (selectedIds.length === paginatedData.length) {
             onSelectionChange?.([]);
         } else {
-            onSelectionChange?.(data.map(d => d.id));
+            onSelectionChange?.(paginatedData.map(d => d.id));
         }
     };
 
@@ -30,6 +50,68 @@ const DataTable = ({
         } else {
             onSelectionChange?.([...selectedIds, id]);
         }
+    };
+
+    const renderPageNumbers = () => {
+        const pages = [];
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, currentPage + 2);
+
+        if (currentPage <= 3) {
+            endPage = Math.min(5, totalPages);
+        }
+        if (currentPage >= totalPages - 2) {
+            startPage = Math.max(1, totalPages - 4);
+        }
+
+        if (startPage > 1) {
+            pages.push(
+                <button
+                    key={1}
+                    onClick={() => handlePageChange(1)}
+                    className="w-8 h-8 flex items-center justify-center rounded-[10px] text-[13px] font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
+                >
+                    1
+                </button>
+            );
+            if (startPage > 2) {
+                pages.push(<span key="ellipsis1" className="w-8 h-8 flex items-center justify-center text-slate-400 text-xs">...</span>);
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(
+                <button
+                    key={i}
+                    onClick={() => handlePageChange(i)}
+                    className={clsx(
+                        "w-8 h-8 flex items-center justify-center rounded-[10px] text-[13px] font-semibold transition-all",
+                        currentPage === i
+                            ? "bg-teal-700 text-white shadow"
+                            : "text-slate-500 hover:bg-slate-100"
+                    )}
+                >
+                    {i}
+                </button>
+            );
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                pages.push(<span key="ellipsis2" className="w-8 h-8 flex items-center justify-center text-slate-400 text-xs">...</span>);
+            }
+            pages.push(
+                <button
+                    key={totalPages}
+                    onClick={() => handlePageChange(totalPages)}
+                    className="w-8 h-8 flex items-center justify-center rounded-[10px] text-[13px] font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
+                >
+                    {totalPages}
+                </button>
+            );
+        }
+
+        return pages;
     };
 
     if (data.length === 0 && emptyState && !filters) { // Only show full empty state if no filters are active/present
@@ -43,7 +125,7 @@ const DataTable = ({
                     {filters}
                 </div>
             )}
-            <div className="overflow-visible pb-24 -mx-5 bg-white rounded-lg border-t border-slate-100/50"> {/* overflow-visible prevents clipping dropdowns, pb-24 gives space */}
+            <div className="overflow-visible pb-24 -mx-5 bg-white rounded-2xl border-t border-slate-100/50"> {/* overflow-visible prevents clipping dropdowns, pb-24 gives space */}
                 <table className="data-table w-full">
                     <thead>
                         <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
@@ -51,7 +133,7 @@ const DataTable = ({
                                 <th className="w-12 text-center py-4 bg-gray-50/50">
                                     <input
                                         type="checkbox"
-                                        checked={selectedIds.length === data.length && data.length > 0}
+                                        checked={selectedIds.length > 0 && selectedIds.length === paginatedData.length}
                                         onChange={toggleAll}
                                         className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-200"
                                     />
@@ -66,7 +148,7 @@ const DataTable = ({
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                         <AnimatePresence>
-                            {data.map((row, idx) => (
+                            {paginatedData.map((row, idx) => (
                                 <motion.tr
                                     key={row.id}
                                     initial={{ opacity: 0 }}
@@ -105,6 +187,54 @@ const DataTable = ({
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination Footer */}
+            {data.length > 0 && (
+                <div className="flex items-center justify-between px-5 py-4 border-t border-slate-100/50 -mx-5 bg-white rounded-b-2xl">
+                    <div className="flex items-center gap-2 text-[13px] text-gray-500">
+                        <span>Show</span>
+                        <div className="relative">
+                            <select
+                                value={itemsPerPage}
+                                onChange={(e) => setItemsPerPage(e.target.value === 'All' ? 'All' : Number(e.target.value))}
+                                className="appearance-none border border-gray-200 rounded-[10px] px-3 py-1.5 pr-8 text-gray-700 bg-white font-medium hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 transition-colors cursor-pointer"
+                            >
+                                <option value={10}>10</option>
+                                <option value={20}>20</option>
+                                <option value={50}>50</option>
+                                <option value={100}>100</option>
+                                <option value="All">All</option>
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                        <span>of {totalEntries} entries</span>
+                    </div>
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center gap-1.5 text-sm font-medium">
+                            <button
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="w-8 h-8 flex items-center justify-center rounded-[10px] border border-slate-100/80 text-slate-400 hover:text-slate-600 hover:border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all mr-1 text-[13px]"
+                            >
+                                <ChevronLeft size={16} strokeWidth={2.5} />
+                            </button>
+
+                            {renderPageNumbers()}
+
+                            <button
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="w-8 h-8 flex items-center justify-center rounded-[10px] border border-slate-100/80 text-slate-400 hover:text-slate-600 hover:border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all ml-1 text-[13px]"
+                            >
+                                <ChevronRight size={16} strokeWidth={2.5} />
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
         </Card>
     );
 };
@@ -117,14 +247,14 @@ DataTable.ActionMenu = ({ rowId, openMenu, setOpenMenu, actions }) => {
         <div className="relative flex justify-end">
             <button
                 onClick={(e) => { e.stopPropagation(); setOpenMenu(isOpen ? null : rowId); }}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-1.5 rounded-[10px] hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
             >
                 <MoreHorizontal size={15} />
             </button>
             {isOpen && (
                 <>
                     <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setOpenMenu(null); }} />
-                    <div className="absolute right-0 top-8 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20 min-w-[140px]">
+                    <div className="absolute right-0 top-8 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20 min-w-[140px] overflow-hidden">
                         {actions.map((action, i) => (
                             <button
                                 key={i}

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plane, Bus, UserCheck, FileText, Eye, CalendarDays, Users, Plus, Pencil, Trash2, Clock, X, MapPin, Printer, Hotel, Train, BookOpen } from 'lucide-react';
+import { Users, Calendar, MapPin, Search, Edit2, CheckCircle2, XCircle, Clock, Plane, Bus, Hotel, Train, FileText, ChevronRight, Phone, Mail, FileCheck, AlertCircle, Plus, Trash2, Edit, Eye, BookOpen, ArrowLeft, Pencil, CalendarDays, X, Printer, Trash, UserCheck } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
@@ -23,14 +23,13 @@ import rawdahService from '../services/rawdahService';
 
 const tabs = [
     { key: 'overview', label: 'Overview', icon: Eye },
+    { key: 'team', label: 'Team Assignment', icon: UserCheck },
     { key: 'flights', label: 'Flights', icon: Plane },
     { key: 'transport', label: 'Transport', icon: Bus },
     { key: 'hotels', label: 'Hotels', icon: Hotel },
     { key: 'trains', label: 'Trains', icon: Train },
-    { key: 'team', label: 'Team Assignment', icon: UserCheck },
-    { key: 'documents', label: 'Documents', icon: FileText },
     { key: 'rawdah', label: 'Rawdah', icon: BookOpen },
-    { key: 'notes', label: 'Notes', icon: FileText },
+    { key: 'documents', label: 'Documents', icon: FileText },
 ];
 
 const GroupDetail = () => {
@@ -44,6 +43,11 @@ const GroupDetail = () => {
     const [segments, setSegments] = useState([]);
     const [flights, setFlights] = useState([]);
     const [flightModal, setFlightModal] = useState(false);
+    const [selectedAirline, setSelectedAirline] = useState(null);
+
+    // Filter flights based on selected airline
+    const airlineOptions = Array.from(new Set(flights.map(f => f.airline))).filter(Boolean);
+    const filteredFlights = flights.filter(f => f.airline === selectedAirline);
     const [editSegment, setEditSegment] = useState(null);
     const flightForm = useForm();
 
@@ -175,8 +179,14 @@ const GroupDetail = () => {
                 override_eta: seg.override_eta || '',
                 remarks: seg.remarks || '',
             });
+            // Auto-select the airline for this segment if editing
+            const matchedFlight = flights.find(f => f.id === seg.flight_master_id);
+            if (matchedFlight) {
+                setSelectedAirline(matchedFlight.airline);
+            }
         } else {
             flightForm.reset({ flight_master_id: '', flight_date: '', segment_order: segments.length + 1, override_etd: '', override_eta: '', remarks: '' });
+            setSelectedAirline(null);
         }
         setFlightModal(true);
     };
@@ -440,49 +450,101 @@ const GroupDetail = () => {
             {/* Tab Content */}
             <AnimatePresence mode="wait">
                 <motion.div key={activeTab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="mt-8">
-                    {activeTab === 'overview' && <OverviewTab group={group} formatDate={formatDate} />}
+                    {activeTab === 'overview' && (
+                        <div className="space-y-6">
+                            <OverviewTab group={group} formatDate={formatDate} />
+                            <NotesTab notes={notesValue} editing={notesEditing} setEditing={setNotesEditing}
+                                value={notesValue} onChange={setNotesValue} onSave={saveNotes} />
+                        </div>
+                    )}
+                    {activeTab === 'team' && <TeamTab tourLeaders={tourLeaders} muthawifs={muthawifs} allTourLeaders={allTourLeaders}
+                        allMuthawifs={allMuthawifs} onAssign={assignStaff} onUnassign={unassignStaff} />}
                     {activeTab === 'flights' && <FlightsTab segments={segments} flights={flights} openModal={openFlightModal}
                         onDelete={s => { setDeleteTarget(s); setDeleteType('segment'); }} formatDate={formatDate} formatTime={formatTime} />}
                     {activeTab === 'transport' && <TransportTab transports={transports} openModal={openTransportModal}
                         onDelete={t => { setDeleteTarget(t); setDeleteType('transport'); }} formatDate={formatDate} />}
-                    {activeTab === 'team' && <TeamTab tourLeaders={tourLeaders} muthawifs={muthawifs} allTourLeaders={allTourLeaders}
-                        allMuthawifs={allMuthawifs} onAssign={assignStaff} onUnassign={unassignStaff} />}
-                    {activeTab === 'documents' && <DocumentsTab groupId={id} />}
                     {activeTab === 'hotels' && <HotelTab hotels={hotels} openModal={openHotelModal}
                         onDelete={h => { setDeleteTarget(h); setDeleteType('hotel'); }} formatDate={formatDate} />}
                     {activeTab === 'trains' && <TrainTab trains={trains} openModal={openTrainModal}
                         onDelete={t => { setDeleteTarget(t); setDeleteType('train'); }} formatDate={formatDate} formatTime={formatTime} />}
                     {activeTab === 'rawdah' && <RawdahTab data={rawdahData} openModal={openRawdahModal} formatDate={formatDate} />}
-                    {activeTab === 'notes' && <NotesTab notes={notesValue} editing={notesEditing} setEditing={setNotesEditing}
-                        value={notesValue} onChange={setNotesValue} onSave={saveNotes} />}
+                    {activeTab === 'documents' && <DocumentsTab groupId={id} />}
                 </motion.div>
             </AnimatePresence>
 
             {/* Flight Modal */}
             <Modal isOpen={flightModal} onClose={() => setFlightModal(false)} title={editSegment ? 'Edit Segment' : 'Add Flight Segment'}>
-                <form onSubmit={flightForm.handleSubmit(submitFlight)} className="space-y-4">
-                    <div className="space-y-1.5">
-                        <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Flight Template</label>
-                        <select {...flightForm.register('flight_master_id', { required: true })} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm bg-white"
-                            style={{ border: '1px solid var(--border)', outline: 'none' }}>
-                            <option value="">Select flight</option>
-                            {flights.map(f => <option key={f.id} value={f.id}>{f.airline} {f.flight_number} — {f.origin}→{f.destination}</option>)}
-                        </select>
+                {!selectedAirline ? (
+                    <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
+                        <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Select Airline</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            {airlineOptions.map(airline => {
+                                const count = flights.filter(f => f.airline === airline).length;
+                                return (
+                                    <button
+                                        key={airline}
+                                        type="button"
+                                        onClick={() => setSelectedAirline(airline)}
+                                        className="flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all hover:-translate-y-0.5"
+                                        style={{
+                                            borderColor: 'var(--border)',
+                                            background: 'var(--bg-card)',
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+                                        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                                    >
+                                        <Plane size={24} className="mb-2" style={{ color: 'var(--accent)' }} />
+                                        <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{airline}</span>
+                                        <span className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>{count} templates</span>
+                                    </button>
+                                );
+                            })}
+                            {airlineOptions.length === 0 && (
+                                <div className="col-span-2 text-center py-6 text-sm" style={{ color: 'var(--text-muted)' }}>
+                                    No flights available. Please add flights in Master Data first.
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input label="Flight Date" type="date" {...flightForm.register('flight_date', { required: true })} />
-                        <Input label="Segment Order" type="number" {...flightForm.register('segment_order', { required: true })} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input label="Override ETD" type="time" {...flightForm.register('override_etd')} />
-                        <Input label="Override ETA" type="time" {...flightForm.register('override_eta')} />
-                    </div>
-                    <Input label="Remarks" {...flightForm.register('remarks')} placeholder="Optional" />
-                    <div className="flex gap-2 justify-end pt-1">
-                        <Button variant="secondary" type="button" onClick={() => setFlightModal(false)}>Cancel</Button>
-                        <Button type="submit" loading={flightForm.formState.isSubmitting}>{editSegment ? 'Update' : 'Add'}</Button>
-                    </div>
-                </form>
+                ) : (
+                    <form onSubmit={flightForm.handleSubmit(submitFlight)} className="space-y-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Airline: {selectedAirline}</span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedAirline(null);
+                                    flightForm.setValue('flight_master_id', '');
+                                }}
+                                className="text-[12px] font-medium hover:underline flex items-center gap-1"
+                                style={{ color: 'var(--accent)' }}
+                            >
+                                <ArrowLeft size={12} /> Change Airline
+                            </button>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Flight Template</label>
+                            <select {...flightForm.register('flight_master_id', { required: true })} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm bg-white"
+                                style={{ border: '1px solid var(--border)', outline: 'none' }}>
+                                <option value="">Select flight</option>
+                                {filteredFlights.map(f => <option key={f.id} value={f.id}>{f.flight_number} — {f.origin}→{f.destination}</option>)}
+                            </select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input label="Flight Date" type="date" {...flightForm.register('flight_date', { required: true })} />
+                            <Input label="Segment Order" type="number" {...flightForm.register('segment_order', { required: true })} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input label="Override ETD" type="time" {...flightForm.register('override_etd')} />
+                            <Input label="Override ETA" type="time" {...flightForm.register('override_eta')} />
+                        </div>
+                        <Input label="Remarks" {...flightForm.register('remarks')} placeholder="Optional" />
+                        <div className="flex gap-2 justify-end pt-1">
+                            <Button variant="secondary" type="button" onClick={() => setFlightModal(false)}>Cancel</Button>
+                            <Button type="submit" loading={flightForm.formState.isSubmitting}>{editSegment ? 'Update' : 'Add'}</Button>
+                        </div>
+                    </form>
+                )}
             </Modal>
 
             {/* Transport Modal */}
@@ -777,6 +839,7 @@ const OverviewTab = ({ group, formatDate }) => {
         { label: 'Departure', value: formatDate(group.departure_date) },
         { label: 'Total Pax', value: group.total_pax },
         { label: 'Handling Company', value: group.handling_company_name || '—' },
+        { label: 'Muasasah', value: group.muasasah || '—' },
         { label: 'Created', value: formatDate(group.created_at) },
     ];
 
@@ -879,6 +942,15 @@ const TransportTab = ({ transports, openModal, onDelete, formatDate }) => (
                                     <p className="text-[12px] font-medium" style={{ color: 'var(--text-secondary)' }}>{t.route}</p>
                                     <div className="flex items-center gap-2 mt-1.5 text-[11px]" style={{ color: 'var(--text-muted)' }}>
                                         <span>{formatDate(t.journey_date)}</span>
+                                        {t.departure_time && (
+                                            <>
+                                                <span>·</span>
+                                                <span className="flex items-center gap-1 font-medium text-slate-500">
+                                                    <Clock size={10} />
+                                                    {t.departure_time}
+                                                </span>
+                                            </>
+                                        )}
                                         {t.pax_count && <span>· {t.pax_count} pax</span>}
                                     </div>
                                 </div>
@@ -1066,37 +1138,37 @@ const NotesTab = ({ notes, editing, setEditing, value, onChange, onSave }) => (
 const RawdahTab = ({ data, openModal, formatDate }) => {
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center bg-slate-800 text-white px-4 py-2.5 rounded-xl shadow-sm">
+            <div className="flex justify-between items-center px-4 py-2.5 rounded-xl shadow-sm transition-all" style={{ backgroundColor: 'var(--primary)', color: 'white' }}>
                 <h3 className="text-sm font-semibold tracking-wider flex items-center gap-2">
-                    <BookOpen size={16} className="text-amber-400" /> FOR RAWDAH  PERMITS
+                    <BookOpen size={16} style={{ color: 'var(--primary-soft)' }} /> FOR RAWDAH PERMITS
                 </h3>
-                <Button size="sm" onClick={() => openModal()} style={{ background: 'white', color: '#1E293B', border: 'none' }}>
+                <Button size="sm" onClick={() => openModal()} className="hover:scale-105 transition-transform" style={{ background: 'white', color: 'var(--primary)', border: 'none' }}>
                     Edit Permits
                 </Button>
             </div>
 
-            <Card padding={false} className="overflow-hidden">
+            <Card padding={false} className="overflow-hidden border border-teal-100">
                 <table className="w-full text-sm">
-                    <thead className="bg-[#fcb900] text-black uppercase text-xs font-bold">
+                    <thead className="uppercase text-xs font-bold" style={{ backgroundColor: 'var(--primary-soft)', color: 'var(--primary-hover)' }}>
                         <tr>
-                            <th className="px-6 py-3 text-center w-1/4 border-b border-black/10"></th>
-                            <th className="px-6 py-3 text-center w-1/4 border-b border-black/10" style={{ borderLeft: '1px solid rgba(0,0,0,0.1)' }}>Date</th>
-                            <th className="px-6 py-3 text-center w-1/4 border-b border-black/10" style={{ borderLeft: '1px solid rgba(0,0,0,0.1)' }}>Time</th>
-                            <th className="px-6 py-3 text-center w-1/4 border-b border-black/10" style={{ borderLeft: '1px solid rgba(0,0,0,0.1)' }}>Total Pax</th>
+                            <th className="px-6 py-3 text-center w-1/4 border-b border-teal-200"></th>
+                            <th className="px-6 py-3 text-center w-1/4 border-b border-teal-200" style={{ borderLeft: '1px solid var(--border)' }}>Date</th>
+                            <th className="px-6 py-3 text-center w-1/4 border-b border-teal-200" style={{ borderLeft: '1px solid var(--border)' }}>Time</th>
+                            <th className="px-6 py-3 text-center w-1/4 border-b border-teal-200" style={{ borderLeft: '1px solid var(--border)' }}>Total Pax</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                        <tr className="hover:bg-slate-50 transition-colors">
+                        <tr className="hover:bg-teal-50/50 transition-colors">
                             <td className="px-6 py-4 font-bold text-center text-slate-800 border-r border-slate-100">MEN</td>
-                            <td className="px-6 py-4 font-bold text-center border-r border-slate-100">{data?.men_date ? formatDate(data.men_date) : '—'}</td>
-                            <td className="px-6 py-4 font-bold text-center border-r border-slate-100">{data?.men_time || '—'}</td>
-                            <td className="px-6 py-4 font-bold text-center">{data?.men_pax || '—'}</td>
+                            <td className="px-6 py-4 font-medium text-center border-r border-slate-100">{data?.men_date ? formatDate(data.men_date) : '—'}</td>
+                            <td className="px-6 py-4 font-medium text-center border-r border-slate-100">{data?.men_time || '—'}</td>
+                            <td className="px-6 py-4 font-medium text-center">{data?.men_pax || '—'}</td>
                         </tr>
-                        <tr className="hover:bg-slate-50 transition-colors">
+                        <tr className="hover:bg-teal-50/50 transition-colors">
                             <td className="px-6 py-4 font-bold text-center text-slate-800 border-r border-slate-100">WOMEN</td>
-                            <td className="px-6 py-4 font-bold text-center border-r border-slate-100">{data?.women_date ? formatDate(data.women_date) : '—'}</td>
-                            <td className="px-6 py-4 font-bold text-center border-r border-slate-100">{data?.women_time || '—'}</td>
-                            <td className="px-6 py-4 font-bold text-center">{data?.women_pax || '—'}</td>
+                            <td className="px-6 py-4 font-medium text-center border-r border-slate-100">{data?.women_date ? formatDate(data.women_date) : '—'}</td>
+                            <td className="px-6 py-4 font-medium text-center border-r border-slate-100">{data?.women_time || '—'}</td>
+                            <td className="px-6 py-4 font-medium text-center">{data?.women_pax || '—'}</td>
                         </tr>
                     </tbody>
                 </table>

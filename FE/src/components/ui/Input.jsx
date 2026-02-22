@@ -19,17 +19,17 @@ const Input = forwardRef(({ label, error, helperText, className, startIcon: Star
                 ref={ref}
                 className={`w-full bg-white transition-all placeholder:text-slate-400 focus:ring-1 focus:ring-[var(--primary)] ${className || ''}`}
                 style={{
-                    height: '44px',
+                    height: '40px',
                     borderRadius: '12px',
-                    paddingLeft: StartIcon ? '44px' : '16px',
-                    paddingRight: EndIcon ? '44px' : '16px',
+                    paddingLeft: StartIcon ? '40px' : '16px',
+                    paddingRight: EndIcon ? '40px' : '16px',
                     border: error ? '1px solid var(--status-danger)' : '1px solid var(--border)',
                     outline: 'none',
                     color: 'var(--text-primary)',
                     fontSize: '14px'
                 }}
 
-                onFocus={e => e.target.style.borderColor = error ? 'var(--danger)' : 'var(--accent-muted)'}
+                onFocus={e => e.target.style.borderColor = error ? 'var(--danger)' : '#0F766E'}
                 onBlur={e => e.target.style.borderColor = error ? 'var(--danger)' : 'var(--border)'}
                 {...props}
             />

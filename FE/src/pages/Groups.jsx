@@ -24,6 +24,7 @@ const groupSchema = z.object({
     departure_date: z.string().min(1, 'Required'),
     total_pax: z.coerce.number().min(1, 'Min 1'),
     handling_company_id: z.string().optional(),
+    muasasah: z.string().optional(),
     notes: z.string().optional(),
 });
 
@@ -109,6 +110,7 @@ const Groups = () => {
             departure_date: group.departure_date?.split('T')[0],
             total_pax: group.total_pax,
             handling_company_id: group.handling_company_id?.toString() || '',
+            muasasah: group.muasasah || '',
             notes: group.notes || '',
         });
         setModalOpen(true);
@@ -116,7 +118,7 @@ const Groups = () => {
 
     const openCreate = () => {
         setEditGroup(null);
-        reset({ group_code: '', program_type: '', departure_date: '', total_pax: '', handling_company_id: '', notes: '' });
+        reset({ group_code: '', program_type: '', departure_date: '', total_pax: '', handling_company_id: '', muasasah: '', notes: '' });
         setModalOpen(true);
     };
 
@@ -263,13 +265,25 @@ const Groups = () => {
                         <Input label="Departure Date" type="date" {...register('departure_date')} error={errors.departure_date?.message} />
                         <Input label="Total Pax" type="number" {...register('total_pax')} error={errors.total_pax?.message} />
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Handling Company</label>
-                        <select {...register('handling_company_id')} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm bg-white"
-                            style={{ border: '1px solid var(--border)', outline: 'none' }}>
-                            <option value="">Select company</option>
-                            {handling.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-                        </select>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Handling Company</label>
+                            <select {...register('handling_company_id')} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm bg-white"
+                                style={{ border: '1px solid var(--border)', outline: 'none' }}>
+                                <option value="">Select company</option>
+                                {handling.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Muasasah</label>
+                            <select {...register('muasasah')} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm bg-white"
+                                style={{ border: '1px solid var(--border)', outline: 'none' }}>
+                                <option value="">Select muasasah</option>
+                                <option value="MAAD">MAAD</option>
+                                <option value="GHANIYA">GHANIYA</option>
+                                <option value="ARABCO">ARABCO</option>
+                            </select>
+                        </div>
                     </div>
                     <div className="space-y-1.5">
                         <label className="block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Notes</label>

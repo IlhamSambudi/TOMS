@@ -59,22 +59,22 @@ const GroupModel = {
     },
 
     create: async (data) => {
-        const { group_code, program_type, departure_date, total_pax, handling_company_id, notes } = data;
+        const { group_code, program_type, departure_date, total_pax, handling_company_id, notes, muasasah } = data;
         const result = await pool.query(
-            `INSERT INTO groups (group_code, program_type, departure_date, total_pax, handling_company_id, notes)
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-            [group_code, program_type, departure_date, total_pax, handling_company_id, notes]
+            `INSERT INTO groups (group_code, program_type, departure_date, total_pax, handling_company_id, notes, muasasah)
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+            [group_code, program_type, departure_date, total_pax, handling_company_id || null, notes, muasasah || null]
         );
         return result.rows[0];
     },
 
     update: async (id, data) => {
-        const { group_code, program_type, departure_date, total_pax, handling_company_id, notes } = data;
+        const { group_code, program_type, departure_date, total_pax, handling_company_id, notes, muasasah } = data;
         const result = await pool.query(
             `UPDATE groups SET group_code = $1, program_type = $2, departure_date = $3, 
-                              total_pax = $4, handling_company_id = $5, notes = $6
-             WHERE id = $7 RETURNING *`,
-            [group_code, program_type, departure_date, total_pax, handling_company_id, notes, id]
+                              total_pax = $4, handling_company_id = $5, notes = $6, muasasah = $7
+             WHERE id = $8 RETURNING *`,
+            [group_code, program_type, departure_date, total_pax, handling_company_id || null, notes, muasasah || null, id]
         );
         return result.rows[0];
     },
