@@ -14,8 +14,22 @@ import authRoutes from './routes/authRoutes.js';
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// ── CORS ─────────────────────────────────────────────────────
+const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+    : ['http://localhost:5173', 'http://localhost:80', 'http://localhost'];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (curl, mobile apps, server-to-server)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error(`CORS blocked: ${origin}`));
+        }
+    },
+    credentials: true,
+}));
 app.use(express.json());
 
 // Set search path for every request

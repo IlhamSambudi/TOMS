@@ -1,0 +1,67 @@
+services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: toms_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: handling
+      POSTGRES_USER: ilhamsambudi
+      POSTGRES_PASSWORD: "123"
+    volumes:
+      - toms_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - toms_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ilhamsambudi -d handling"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Backend (Express) ──────────────────────────────────────────
+  backend:
+    build:
+      context: ../BE
+      dockerfile: Dockerfile
+    container_name: toms_backend
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      DATABASE_URL: postgresql://ilhamsambudi:123@db:5432/handling
+      JWT_SECRET: ${JWT_SECRET:-toms_secret_key_2026}
+      NODE_ENV: production
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - toms_network
+
+  # ── Frontend (Vite → nginx) ────────────────────────────────────
+  frontend:
+    build:
+      context: ../FE
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5000/api
+    container_name: toms_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - toms_network
+
+# ── Volumes ────────────────────────────────────────────────────
+volumes:
+  toms_pgdata:
+
+# ── Network ────────────────────────────────────────────────────
+networks:
+  toms_network:
+    driver: bridge
