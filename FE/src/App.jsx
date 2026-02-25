@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './layout/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Groups from './pages/Groups';
 import GroupDetail from './pages/GroupDetail';
@@ -21,9 +23,21 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public route */}
+        <Route path="/login" element={<Login />} />
+
         {/* Print route — outside Layout so it's full-screen */}
         <Route path="groups/:id/print" element={<GroupPrintView />} />
-        <Route path="/" element={<Layout />}>
+
+        {/* Protected routes — wrapped in ProtectedRoute */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Dashboard />} />
           <Route path="groups" element={<Groups />} />
           <Route path="groups/:id" element={<GroupDetail />} />
@@ -54,3 +68,4 @@ function App() {
 }
 
 export default App;
+

@@ -7,6 +7,15 @@ const api = axios.create({
     },
 });
 
+// Attach JWT token to every request
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+});
+
 api.interceptors.response.use(
     (response) => {
         // If the backend returns { success: true, data: ... }, return element.data
@@ -16,9 +25,16 @@ api.interceptors.response.use(
         return response;
     },
     (error) => {
-        const message = error.response?.data?.error || error.message || 'Something went wrong';
+        // Redirect to login on 401 (expired / invalid token)
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+        const message = error.response?.data?.message || error.response?.data?.error || error.message || 'Something went wrong';
         return Promise.reject(new Error(message));
     }
 );
 
 export default api;
+

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
+import authService from '../services/authService';
 import {
     LayoutDashboard,
     Users,
@@ -51,7 +52,15 @@ const navSections = [
 
 const Layout = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const [mobileOpen, setMobileOpen] = useState(false);
+
+    const user = authService.getUser();
+
+    const handleLogout = () => {
+        authService.logout();
+        navigate('/login');
+    };
 
     // Check if a path is active
     const isActive = (path) => {
@@ -152,18 +161,41 @@ const Layout = () => {
 
                 {/* 3. User Profile Footer */}
                 <div className="p-4 border-t border-slate-200">
-                    <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors md:justify-center xl:justify-start">
-                        <div className="size-[36px] rounded-full bg-slate-100 shrink-0 border border-slate-200 overflow-hidden">
-                            <img
-                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin"
-                                alt="Admin"
-                                className="w-full h-full object-cover"
-                            />
+                    <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors md:justify-center xl:justify-start">
+                        <div className="size-[36px] rounded-full bg-teal-100 shrink-0 border border-teal-200 overflow-hidden flex items-center justify-center">
+                            <span className="text-teal-700 font-bold text-sm">
+                                {user?.full_name?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || 'A'}
+                            </span>
                         </div>
-                        <div className="flex flex-col md:hidden xl:flex overflow-hidden">
-                            <span className="text-[13px] font-semibold text-slate-900 truncate">Admin User</span>
-                            <span className="text-[11px] text-slate-500 truncate">Operations Lead</span>
+                        <div className="flex flex-col md:hidden xl:flex overflow-hidden flex-1">
+                            <span className="text-[13px] font-semibold text-slate-900 truncate">
+                                {user?.full_name || user?.username || 'Admin'}
+                            </span>
+                            <span className="text-[11px] text-slate-500 truncate capitalize">
+                                {user?.role || 'operator'}
+                            </span>
                         </div>
+                        <button
+                            onClick={handleLogout}
+                            title="Logout"
+                            className="md:hidden xl:flex ml-auto p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all shrink-0"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                            </svg>
+                        </button>
+                    </div>
+                    {/* Logout for tablet (icon-only) */}
+                    <div className="hidden md:flex xl:hidden justify-center mt-2">
+                        <button
+                            onClick={handleLogout}
+                            title="Logout"
+                            className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </aside>
