@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Hotel, Calendar, Building2 } from 'lucide-react';
+import { Search, Hotel, Calendar, Building2, Eye, EyeOff } from 'lucide-react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -18,6 +18,17 @@ const selectStyle = {
     border: '1px solid var(--border)', outline: 'none', background: '#fff',
 };
 
+// Returns 'YYYY-MM-DD' for today in local time
+const todayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const isPast = (dateStr) => {
+    if (!dateStr) return false;
+    return dateStr.split('T')[0] < todayStr();
+};
+
 const Hotels = () => {
     const [data, setData] = useState([]);
     const [groups, setGroups] = useState([]);
@@ -28,6 +39,7 @@ const Hotels = () => {
     const [selectedId, setSelectedId] = useState(null);
     const [selectedGroupId, setSelectedGroupId] = useState(null);
     const [editingHotel, setEditingHotel] = useState(null);
+    const [showAll, setShowAll] = useState(false);
 
     const form = useForm();
 
@@ -59,7 +71,17 @@ const Hotels = () => {
 
     useEffect(() => { fetchData(); }, []);
 
-    const filteredData = data.filter(item =>
+    // Sort by check_in ascending, then filter past (check_out < today)
+    const sortedData = [...data].sort((a, b) => {
+        const da = a.check_in ? a.check_in.split('T')[0] : '';
+        const db = b.check_in ? b.check_in.split('T')[0] : '';
+        return da.localeCompare(db);
+    });
+
+    const activeData = showAll ? sortedData : sortedData.filter(item => !isPast(item.check_out));
+    const pastCount = sortedData.filter(item => isPast(item.check_out)).length;
+
+    const filteredData = activeData.filter(item =>
         item.hotel_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.group_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -178,9 +200,26 @@ const Hotels = () => {
                 columns={columns}
                 data={filteredData}
                 loading={loading}
+                getRowClassName={(row) => isPast(row.check_out) ? 'opacity-50 bg-slate-50' : ''}
                 filters={
-                    <Input placeholder="Search hotel, city, group..." icon={Search}
-                        value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-[300px]" />
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <Input placeholder="Search hotel, city, group..." icon={Search}
+                            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-[300px]" />
+                        {pastCount > 0 && (
+                            <button
+                                onClick={() => setShowAll(v => !v)}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium border transition-colors"
+                                style={{
+                                    borderColor: showAll ? 'var(--primary)' : 'var(--border)',
+                                    color: showAll ? 'var(--primary)' : 'var(--text-muted)',
+                                    background: showAll ? 'var(--primary-light, #f0fdfa)' : 'transparent',
+                                }}
+                            >
+                                {showAll ? <EyeOff size={14} /> : <Eye size={14} />}
+                                {showAll ? 'Hide Past' : `Show Past (${pastCount})`}
+                            </button>
+                        )}
+                    </div>
                 }
                 emptyState="No hotel records found."
             />

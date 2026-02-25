@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Calendar, Clock, Bus, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, MapPin, Calendar, Clock, Bus, Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 import Input from '../../components/ui/Input';
 import DataTable from '../../components/ui/DataTable';
@@ -9,25 +9,33 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import transportService from '../../services/transportService';
 import toast from 'react-hot-toast';
 
+// Returns a date-only string 'YYYY-MM-DD' for today in local time
+const todayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const isPast = (dateStr) => {
+    if (!dateStr) return false;
+    const d = dateStr.split('T')[0]; // normalize ISO strings
+    return d < todayStr();
+};
+
 const Transport = () => {
     const [data, setData] = useState([]);
-    // const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
     const [editingTransport, setEditingTransport] = useState(null);
+    const [showAll, setShowAll] = useState(false);
 
     const fetchData = async () => {
-        // setLoading(true);
         try {
             const result = await transportService.getAll();
-            // Handle both array and {success, message, data} response formats
             setData(Array.isArray(result) ? result : (result?.data || []));
         } catch {
             toast.error('Failed to load transports');
-        } finally {
-            // setLoading(false);
         }
     };
 
@@ -35,7 +43,17 @@ const Transport = () => {
         fetchData();
     }, []);
 
-    const filteredData = data.filter(item =>
+    // Sort by date ascending, then apply past-date filter
+    const sortedData = [...data].sort((a, b) => {
+        const da = a.journey_date ? a.journey_date.split('T')[0] : '';
+        const db = b.journey_date ? b.journey_date.split('T')[0] : '';
+        return da.localeCompare(db);
+    });
+
+    const activeData = showAll ? sortedData : sortedData.filter(item => !isPast(item.journey_date));
+    const pastCount = sortedData.filter(item => isPast(item.journey_date)).length;
+
+    const filteredData = activeData.filter(item =>
         item.provider_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.vehicle_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.group_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -160,8 +178,9 @@ const Transport = () => {
             <DataTable
                 columns={columns}
                 data={filteredData}
+                getRowClassName={(row) => isPast(row.journey_date) ? 'opacity-50 bg-slate-50' : ''}
                 filters={
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                         <Input
                             placeholder="Search transport..."
                             icon={Search}
@@ -169,6 +188,20 @@ const Transport = () => {
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-[300px]"
                         />
+                        {pastCount > 0 && (
+                            <button
+                                onClick={() => setShowAll(v => !v)}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium border transition-colors"
+                                style={{
+                                    borderColor: showAll ? 'var(--primary)' : 'var(--border)',
+                                    color: showAll ? 'var(--primary)' : 'var(--text-muted)',
+                                    background: showAll ? 'var(--primary-light, #f0fdfa)' : 'transparent',
+                                }}
+                            >
+                                {showAll ? <EyeOff size={14} /> : <Eye size={14} />}
+                                {showAll ? 'Hide Past' : `Show Past (${pastCount})`}
+                            </button>
+                        )}
                     </div>
                 }
                 emptyState="No transport records found."

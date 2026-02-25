@@ -13,6 +13,7 @@ const DataTable = ({
     selectedIds = [],
     onSelectionChange,
     filters, // New prop for unified layout
+    getRowClassName, // Optional: (row) => string — extra classes per row
 }) => {
     const [openMenu, setOpenMenu] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -156,7 +157,8 @@ const DataTable = ({
                                     transition={{ delay: idx * 0.02 }}
                                     className={clsx(
                                         'hover:bg-gray-50/50 transition-colors',
-                                        onRowClick ? 'cursor-pointer' : ''
+                                        onRowClick ? 'cursor-pointer' : '',
+                                        getRowClassName ? getRowClassName(row) : ''
                                     )}
                                     onClick={() => onRowClick?.(row)}
                                 >

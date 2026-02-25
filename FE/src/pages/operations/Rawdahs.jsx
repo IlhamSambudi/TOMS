@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Search, Plus } from 'lucide-react';
+import { BookOpen, Search, Plus, Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
 import PageHeader from '../../components/ui/PageHeader';
 import DataTable from '../../components/ui/DataTable';
-import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -13,12 +12,38 @@ import Button from '../../components/ui/Button';
 import rawdahService from '../../services/rawdahService';
 import groupService from '../../services/groupService';
 
+// Returns 'YYYY-MM-DD' for today in local time
+const todayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const isPast = (dateStr) => {
+    if (!dateStr) return false;
+    return dateStr.split('T')[0] < todayStr();
+};
+
+// For Rawdah: a row is "past" if BOTH men_date and women_date are past (or null).
+// If either is upcoming, the row is still active.
+const isRowPast = (row) => {
+    const menDone = !row.men_date || isPast(row.men_date);
+    const womenDone = !row.women_date || isPast(row.women_date);
+    return menDone && womenDone;
+};
+
+// Get the latest date for sorting (max of men_date / women_date)
+const getLatestDate = (row) => {
+    const dates = [row.men_date, row.women_date].filter(Boolean).map(d => d.split('T')[0]);
+    return dates.length ? dates.sort().reverse()[0] : '';
+};
+
 const Rawdahs = () => {
     const [rawdahs, setRawdahs] = useState([]);
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showAll, setShowAll] = useState(false);
 
     const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm();
 
@@ -56,7 +81,15 @@ const Rawdahs = () => {
         }
     };
 
-    const filteredRawdahs = rawdahs.filter(r => {
+    // Sort by the latest date ascending (soonest upcoming first)
+    const sortedRawdahs = [...rawdahs].sort((a, b) =>
+        getLatestDate(a).localeCompare(getLatestDate(b))
+    );
+
+    const activeRawdahs = showAll ? sortedRawdahs : sortedRawdahs.filter(r => !isRowPast(r));
+    const pastCount = sortedRawdahs.filter(r => isRowPast(r)).length;
+
+    const filteredRawdahs = activeRawdahs.filter(r => {
         if (!searchTerm) return true;
         const term = searchTerm.toLowerCase();
         return (
@@ -129,8 +162,10 @@ const Rawdahs = () => {
             <DataTable
                 columns={columns}
                 data={filteredRawdahs}
+                loading={loading}
+                getRowClassName={(row) => isRowPast(row) ? 'opacity-50 bg-slate-50' : ''}
                 filters={
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                         <Input
                             placeholder="Search groups..."
                             icon={Search}
@@ -138,6 +173,20 @@ const Rawdahs = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-[300px]"
                         />
+                        {pastCount > 0 && (
+                            <button
+                                onClick={() => setShowAll(v => !v)}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium border transition-colors"
+                                style={{
+                                    borderColor: showAll ? 'var(--primary)' : 'var(--border)',
+                                    color: showAll ? 'var(--primary)' : 'var(--text-muted)',
+                                    background: showAll ? 'var(--primary-light, #f0fdfa)' : 'transparent',
+                                }}
+                            >
+                                {showAll ? <EyeOff size={14} /> : <Eye size={14} />}
+                                {showAll ? 'Hide Past' : `Show Past (${pastCount})`}
+                            </button>
+                        )}
                     </div>
                 }
                 emptyState="There are currently no rawdah allocations matching your search."
